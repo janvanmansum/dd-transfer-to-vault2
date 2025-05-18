@@ -15,29 +15,23 @@
  */
 package nl.knaw.dans.transfer.core;
 
-import lombok.Builder;
-import lombok.Data;
-import lombok.ToString;
+import org.apache.commons.io.filefilter.AbstractFileFilter;
+import org.apache.commons.io.filefilter.IOFileFilter;
 
-import java.time.OffsetDateTime;
-import java.util.List;
+import java.io.File;
 
-@Data
-@Builder
-public class FileContentAttributes {
-    private OffsetDateTime creationTime;
+public class DveFileFilter extends AbstractFileFilter {
+    private static IOFileFilter instance;
 
-    private String dataversePid;
-    private String dataversePidVersion;
-    private String title;
-    private String bagId;
-    private String nbn;
-    @ToString.Exclude
-    private String metadata;
-    private String otherId;
-    private String otherIdVersion;
-    private String swordToken;
-    private String dataSupplier;
-    private String datastation;
-    private List<DataFileAttributes> dataFileAttributes;
+    public static IOFileFilter getInstance() {
+        if (instance == null) {
+            instance = new DveFileFilter();
+        }
+        return instance;
+    }
+
+    @Override
+    public boolean accept(File file) {
+        return file.isFile() && file.getName().endsWith(".zip");
+    }
 }

@@ -27,6 +27,7 @@ import nl.knaw.dans.transfer.config.DdTransferToVaultConfiguration;
 import nl.knaw.dans.transfer.core.CollectDveTaskFactory;
 import nl.knaw.dans.transfer.core.CreationTimeComparator;
 import nl.knaw.dans.transfer.core.DataFileAttributesReader;
+import nl.knaw.dans.transfer.core.DveFileFilter;
 import nl.knaw.dans.transfer.core.ExtractMetadataTaskFactory;
 import nl.knaw.dans.transfer.core.FileContentAttributesReader;
 import nl.knaw.dans.transfer.core.FileService;
@@ -84,7 +85,7 @@ public class DdTransferToVaultApplication extends Application<DdTransferToVaultC
             Inbox.builder()
                 .awaitLatch(startCollectInbox)
                 .onPollingHandler(new RemoveEmptySubdirsTask(configuration.getTransfer().getCollectDve().getOutbox().getProcessed()))
-                .fileFilter(FileFilterUtils.fileFileFilter())
+                .fileFilter(DveFileFilter.getInstance())
                 .taskFactory(
                     CollectDveTaskFactory.builder()
                         .destinationRoot(configuration.getTransfer().getCollectDve().getOutbox().getProcessed())

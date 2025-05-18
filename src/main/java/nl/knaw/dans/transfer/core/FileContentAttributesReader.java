@@ -21,7 +21,10 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.OffsetDateTime;
+import java.util.Properties;
 
 @AllArgsConstructor
 public class FileContentAttributesReader {
@@ -29,15 +32,27 @@ public class FileContentAttributesReader {
     private final OaiOreMetadataReader oaiOreMetadataReader;
     private final DataFileAttributesReader dataFileAttributesReader;
 
-    public FileContentAttributes getFileContentAttributes(Path path)  {
+    public FileContentAttributes getFileContentAttributes(Path path) {
 
         try {
             var datasetVersionExport = fileService.openZipFile(path);
-
             var metadataContent = fileService.getEntryUnderBaseFolder(datasetVersionExport, Path.of("metadata/oai-ore.jsonld"));
             var oaiOre = IOUtils.toString(metadataContent, StandardCharsets.UTF_8);
             var fileContentAttributes = oaiOreMetadataReader.readMetadata(oaiOre);
             fileContentAttributes.setMetadata(oaiOre);
+            var propertiesPath = path.getParent().resolve(path.getFileName() + ".properties");
+            String creationTimeValue = null;
+            if (Files.exists(propertiesPath)) {
+                var props = new Properties();
+                try (var reader = Files.newBufferedReader(propertiesPath)) {
+                    props.load(reader);
+                    creationTimeValue = props.getProperty("creationTime");
+                    fileContentAttributes.setCreationTime(OffsetDateTime.parse(creationTimeValue));
+                }
+            }
+            else {
+                throw new IllegalStateException("Missing properties file: " + propertiesPath);
+            }
 
             var dataFileAttributes = dataFileAttributesReader.readDataFileAttributes(path);
             fileContentAttributes.setDataFileAttributes(dataFileAttributes);

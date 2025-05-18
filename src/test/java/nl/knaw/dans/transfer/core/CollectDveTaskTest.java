@@ -52,19 +52,21 @@ public class CollectDveTaskTest extends TestDirFixture {
         Files.createDirectories(inbox);
         var dest = testDir.resolve("dest");
         Files.createDirectories(dest);
+        var failed = testDir.resolve("failed");
+        Files.createDirectories(failed);
 
         var nonZipFile = inbox.resolve("nonzip.txt");
         Files.writeString(nonZipFile, "This is not a zip file");
 
-        var collectDveTask = new CollectDveTask(nonZipFile, dest, inbox.resolve("failed"));
+        var collectDveTask = new CollectDveTask(nonZipFile, dest, failed);
 
         // When
         collectDveTask.run();
 
         // Then
-        assertThat(inbox.resolve("failed").resolve("nonzip.txt")).exists();
-        assertThat(inbox.resolve("failed").resolve("nonzip.txt-error.log")).exists();
-        assertThat(inbox.resolve("failed").resolve("nonzip.txt-error.log")).content().contains("not a ZIP file:");
+        assertThat(failed.resolve("nonzip.txt")).exists();
+        assertThat(failed.resolve("nonzip.txt-error.log")).exists();
+        assertThat(failed.resolve("nonzip.txt-error.log")).content().contains("not a ZIP file:");
     }
 
     @Test
@@ -74,19 +76,21 @@ public class CollectDveTaskTest extends TestDirFixture {
         Files.createDirectories(inbox);
         var dest = testDir.resolve("dest");
         Files.createDirectories(dest);
+        var failed = testDir.resolve("failed");
+        Files.createDirectories(failed);
 
         var dve = inbox.resolve("dve.zip");
         Files.copy(Path.of("src/test/resources/test-dves/doi-10-5072-dar-zzjh97v1.1-no-oai-ore.zip"), dve);
 
-        var collectDveTask = new CollectDveTask(dve, dest, inbox.resolve("failed"));
+        var collectDveTask = new CollectDveTask(dve, dest, failed);
 
         // When
         collectDveTask.run();
 
         // Then
-        assertThat(inbox.resolve("failed").resolve("dve.zip")).exists();
-        assertThat(inbox.resolve("failed").resolve("dve.zip-error.log")).exists();
-        assertThat(inbox.resolve("failed").resolve("dve.zip-error.log")).content().contains("No metadata file found in DVE");
+        assertThat(failed.resolve("dve.zip")).exists();
+        assertThat(failed.resolve("dve.zip-error.log")).exists();
+        assertThat(failed.resolve("dve.zip-error.log")).content().contains("No metadata file found in DVE");
     }
 
     @Test
@@ -96,20 +100,21 @@ public class CollectDveTaskTest extends TestDirFixture {
         Files.createDirectories(inbox);
         var dest = testDir.resolve("dest");
         Files.createDirectories(dest);
+        var failed = testDir.resolve("failed");
+        Files.createDirectories(failed);
 
         var dve = inbox.resolve("dve.zip");
         Files.copy(Path.of("src/test/resources/test-dves/doi-10-5072-dar-zzjh97v1.1-no-nbn.zip"), dve);
 
-        var collectDveTask = new CollectDveTask(dve, dest, inbox.resolve("failed"));
+        var collectDveTask = new CollectDveTask(dve, dest, failed);
 
         // When
         collectDveTask.run();
 
         // Then
-        assertThat(inbox.resolve("failed").resolve("dve.zip")).exists();
-        assertThat(inbox.resolve("failed").resolve("dve.zip-error.log")).exists();
-        assertThat(inbox.resolve("failed").resolve("dve.zip-error.log")).content().contains("No NBN found in DVE");
+        assertThat(failed.resolve("dve.zip")).exists();
+        assertThat(failed.resolve("dve.zip-error.log")).exists();
+        assertThat(failed.resolve("dve.zip-error.log")).content().contains("No NBN found in DVE");
     }
-
 
 }

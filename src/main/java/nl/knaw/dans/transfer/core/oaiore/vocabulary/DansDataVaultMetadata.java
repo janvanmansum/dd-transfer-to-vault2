@@ -20,7 +20,7 @@ import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Property;
 
 public class DansDataVaultMetadata {
-    public static final String NS = "https://dar.dans.knaw.nl/schema/dansDataVaultMetadata#";
+    public static final String NS = "https://schemas.dans.knaw.nl/metadatablock/dansDataVaultMetadata#";
     private static final Model m = ModelFactory.createDefaultModel();
     public static final Property dansDataversePid = m.createProperty(NS, "dansDataversePid");
     public static final Property dansDataversePidVersion = m.createProperty(NS, "dansDataversePidVersion");

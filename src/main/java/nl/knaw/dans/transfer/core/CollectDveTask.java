@@ -27,6 +27,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.ProviderNotFoundException;
 
+import static nl.knaw.dans.transfer.core.FileUtils.calculateProperties;
+import static nl.knaw.dans.transfer.core.FileUtils.findFreeName;
+import static nl.knaw.dans.transfer.core.FileUtils.writeProperties;
+
 /**
  * <p>
  * Determines the target NBN of a DVE. If there is no subdirectory for the target NBN yet, one is created. Then the DVE is moved to the subdirectory.
@@ -52,12 +56,17 @@ public class CollectDveTask implements Runnable {
         try {
             var targetNbn = findTargetNbn();
             var targetDir = destinationRoot.resolve(targetNbn);
-            ensureExists(targetDir);
-            moveToTargetDir(targetDir);
+            FileUtils.ensureDirectoryExists(targetDir);
+            moveToDir(targetDir);
         }
         catch (Exception e) {
             log.error("Unable to process DVE: {}", dve, e);
-            moveToFailedOutbox(e);
+            try {
+                moveToDir(failedOutbox, e);
+            }
+            catch (IOException ioe) {
+                log.error("Unable to move DVE to failed outbox: {}", failedOutbox, ioe);
+            }
         }
     }
 
@@ -77,9 +86,11 @@ public class CollectDveTask implements Runnable {
 
                     try (var is = Files.newInputStream(metadataPath)) {
                         return JsonPath.read(is, NBN_PATH);
-                    } catch (PathNotFoundException e) {
+                    }
+                    catch (PathNotFoundException e) {
                         throw new IllegalStateException("No NBN found in DVE", e);
-                    } catch (Exception e) {
+                    }
+                    catch (Exception e) {
                         throw new IllegalStateException("Unable to read NBN from metadata file", e);
                     }
                 }
@@ -90,27 +101,30 @@ public class CollectDveTask implements Runnable {
         }
     }
 
-    private void ensureExists(Path dir) throws IOException {
-        if (!Files.exists(dir)) {
-            Files.createDirectories(dir);
+
+    private void moveToDir(Path dir) throws IOException {
+        moveToDir(dir, null);
+    }
+
+    private void moveToDir(Path dir, Exception e) throws IOException {
+        var props = calculateProperties(dve);
+        var newLocation = findFreeName(dir, dve);
+        if (newLocation == null) {
+            log.info("File already exists with the same MD5 hash: {}", dve);
+            return; // Skip the move if the file already exists with the same MD5
+        }
+        var newPropertiesFile = newLocation.resolveSibling(newLocation.getFileName() + ".properties");
+        writeProperties(newPropertiesFile, props);
+        Files.move(dve, dir.resolve(dve.getFileName()));
+        if (e != null) {
+            writeStackTrace(newLocation, e);
         }
     }
 
-    private void moveToTargetDir(Path targetDir) throws IOException {
-        Files.move(dve, targetDir.resolve(dve.getFileName()));
-    }
-
-    private void moveToFailedOutbox(Exception e) {
-        try {
-            ensureExists(failedOutbox);
-            Files.move(dve, failedOutbox.resolve(dve.getFileName()));
-            var stackTraceFile = failedOutbox.resolve(dve.getFileName() + "-error.log");
-            try (var writer = Files.newBufferedWriter(stackTraceFile)) {
-                e.printStackTrace(new java.io.PrintWriter(writer));
-            }
-        }
-        catch (IOException ioe) {
-            log.error("Unable to move DVE to failed outbox: {}", failedOutbox, ioe);
+    private void writeStackTrace(Path dve, Exception e) throws IOException {
+        var stackTraceFile = dve.resolveSibling(dve.getFileName() + "-error.log");
+        try (var writer = Files.newBufferedWriter(stackTraceFile)) {
+            e.printStackTrace(new java.io.PrintWriter(writer));
         }
     }
 }

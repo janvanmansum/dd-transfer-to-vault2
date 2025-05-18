@@ -92,7 +92,7 @@ public class ExtractMetadataTask implements Runnable {
 
     private List<Path> getDves() throws IOException {
         try (var dirStream = Files.list(targetNbnDir)) {
-            return dirStream.filter(Files::isRegularFile).filter(p -> !p.getFileName().toString().equals("block"))
+            return dirStream.filter(Files::isRegularFile).filter(p -> p.getFileName().toString().endsWith(".zip"))
                 .sorted(CreationTimeComparator.getInstance()).toList();
         }
     }

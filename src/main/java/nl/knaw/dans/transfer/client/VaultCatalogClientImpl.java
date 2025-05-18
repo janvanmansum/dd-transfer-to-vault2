@@ -70,6 +70,7 @@ public class VaultCatalogClientImpl implements VaultCatalogClient {
             .datastation(fileContentAttributes.getDatastation());
 
         var dveDto = new VersionExportDto();
+        dveDto.setOcflObjectVersionNumber(1);
         setVersionExportMetadata(fileContentAttributes, dveDto);
         setDataFilesOnVersionExport(fileContentAttributes, dveDto);
         datasetDto.addVersionExportsItem(dveDto);
@@ -97,6 +98,7 @@ public class VaultCatalogClientImpl implements VaultCatalogClient {
     }
 
     private void setVersionExportMetadata(FileContentAttributes fileContentAttributes, VersionExportDto dveDto) {
+        dveDto.setCreatedTimestamp(fileContentAttributes.getCreationTime());
         dveDto.setBagId(fileContentAttributes.getBagId());
         dveDto.setDatasetNbn(fileContentAttributes.getNbn());
         dveDto.setDataversePidVersion(fileContentAttributes.getDataversePidVersion());
