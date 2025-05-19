@@ -117,14 +117,7 @@ public class CollectDveTask implements Runnable {
         writeProperties(newPropertiesFile, props);
         Files.move(dve, dir.resolve(dve.getFileName()));
         if (e != null) {
-            writeStackTrace(newLocation, e);
-        }
-    }
-
-    private void writeStackTrace(Path dve, Exception e) throws IOException {
-        var stackTraceFile = dve.resolveSibling(dve.getFileName() + "-error.log");
-        try (var writer = Files.newBufferedWriter(stackTraceFile)) {
-            e.printStackTrace(new java.io.PrintWriter(writer));
+            FileUtils.writeStackTrace(newLocation, e);
         }
     }
 }

@@ -16,20 +16,10 @@
 package nl.knaw.dans.transfer.core;
 
 import org.apache.commons.io.filefilter.AbstractFileFilter;
-import org.apache.commons.io.filefilter.IOFileFilter;
 
 import java.io.File;
 
 public class DveFileFilter extends AbstractFileFilter {
-    private static IOFileFilter instance;
-
-    public static IOFileFilter getInstance() {
-        if (instance == null) {
-            instance = new DveFileFilter();
-        }
-        return instance;
-    }
-
     @Override
     public boolean accept(File file) {
         return file.isFile() && file.getName().endsWith(".zip");

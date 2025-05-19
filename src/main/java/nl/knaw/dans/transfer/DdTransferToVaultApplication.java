@@ -85,7 +85,7 @@ public class DdTransferToVaultApplication extends Application<DdTransferToVaultC
             Inbox.builder()
                 .awaitLatch(startCollectInbox)
                 .onPollingHandler(new RemoveEmptySubdirsTask(configuration.getTransfer().getCollectDve().getOutbox().getProcessed()))
-                .fileFilter(DveFileFilter.getInstance())
+                .fileFilter(new DveFileFilter())
                 .taskFactory(
                     CollectDveTaskFactory.builder()
                         .destinationRoot(configuration.getTransfer().getCollectDve().getOutbox().getProcessed())

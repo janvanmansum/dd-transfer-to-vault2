@@ -22,7 +22,10 @@ import nl.knaw.dans.transfer.client.VaultCatalogClient;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
+
+import static nl.knaw.dans.transfer.core.FileUtils.findFreeName;
 
 @Slf4j
 @AllArgsConstructor
@@ -55,10 +58,11 @@ public class ExtractMetadataTask implements Runnable {
                     try {
                         var fileContenctAttributes = fileContentAttributesReader.getFileContentAttributes(dve);
                         vaultCatalogClient.registerOcflObjectVersion(fileContenctAttributes);
+                        moveToDir(dve, outboxProcessed, null);
                     }
                     catch (Exception e) {
                         log.error("Error processing DVE", e);
-                        moveToOutbox(dve, outboxFailed, e);
+                        moveToDir(dve, outboxFailed, e);
                         try {
                             blockTarget();
                         }
@@ -107,20 +111,18 @@ public class ExtractMetadataTask implements Runnable {
         }
     }
 
-    private void moveToOutbox(Path dve, Path outbox, Exception e) {
-        try {
-            var errorDir = outbox.resolve(targetNbnDir.getFileName());
-            Files.createDirectories(errorDir);
-            Files.move(dve, errorDir.resolve(dve.getFileName()));
-            if (e != null) {
-                var stackTraceFile = errorDir.resolve(dve.getFileName() + "-error.log");
-                try (var writer = Files.newBufferedWriter(stackTraceFile)) {
-                    e.printStackTrace(new java.io.PrintWriter(writer));
-                }
-            }
+    private void moveToDir(Path dve, Path dir, Exception e) throws IOException {
+        var newLocation = findFreeName(dir, dve);
+        if (newLocation == null) {
+            log.info("File already exists with the same MD5 hash: {}", dve);
+            return; // Skip the move if the file already exists with the same MD5
         }
-        catch (IOException ioe) {
-            log.error("Unable to move DVE to outbox: {}", outbox, ioe);
+        var sourcePropertiesFile = dve.resolveSibling(dve.getFileName() + ".properties");
+        var targetPropertiesFile = newLocation.resolveSibling(newLocation.getFileName() + ".properties");
+        Files.move(sourcePropertiesFile, targetPropertiesFile, StandardCopyOption.REPLACE_EXISTING);
+        Files.move(dve, dir.resolve(dve.getFileName()));
+        if (e != null) {
+            FileUtils.writeStackTrace(newLocation, e);
         }
     }
 }
