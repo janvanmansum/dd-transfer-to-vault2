@@ -120,6 +120,8 @@ public class VaultCatalogClientImpl implements VaultCatalogClient {
         dveDto.setMetadata(dveMetadata.getMetadata());
         dveDto.setSkeletonRecord(false);
         dveDto.setTitle(dveMetadata.getTitle());
+        dveDto.setExporter(dveMetadata.getExporter());
+        dveDto.setExporterVersion(dveMetadata.getExporterVersion());
     }
 
     private void setDataFilesOnVersionExport(DveMetadata dveMetadata, VersionExportDto dveDto) {

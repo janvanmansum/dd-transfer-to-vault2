@@ -18,7 +18,9 @@ package nl.knaw.dans.transfer.core.oaiore;
 import nl.knaw.dans.transfer.core.DveMetadata;
 import nl.knaw.dans.transfer.core.oaiore.vocabulary.DansDataVaultMetadata;
 import nl.knaw.dans.transfer.core.oaiore.vocabulary.DataverseCitationMetadata;
+import nl.knaw.dans.transfer.core.oaiore.vocabulary.DvCore;
 import nl.knaw.dans.transfer.core.oaiore.vocabulary.OaiOreMetadata;
+import nl.knaw.dans.transfer.core.oaiore.vocabulary.Schema;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Property;
@@ -26,6 +28,7 @@ import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.sparql.vocabulary.FOAF;
 import org.apache.jena.vocabulary.DCTerms;
 import org.apache.jena.vocabulary.RDF;
+import org.apache.jena.vocabulary.SchemaDO;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
@@ -42,46 +45,34 @@ public class OaiOreMetadataReader {
         var aggregations = model.listStatements(null, RDF.type, OaiOreMetadata.Aggregation);
 
         if (aggregations.hasNext()) {
-            var resource = aggregations.next().getSubject();
+            var theAggregation = aggregations.next().getSubject();
 
-            builder.bagId(getRDFProperty(resource, DansDataVaultMetadata.dansBagId));
-            builder.nbn(getRDFProperty(resource, DansDataVaultMetadata.dansNbn));
-            builder.swordToken(getRDFProperty(resource, DansDataVaultMetadata.dansSwordToken));
-            builder.dataSupplier(getRDFProperty(resource, DansDataVaultMetadata.dansDataSupplier));
-            builder.dataversePid(getRDFProperty(resource, DansDataVaultMetadata.dansDataversePid));
-            builder.dataversePidVersion(getRDFProperty(resource, DansDataVaultMetadata.dansDataversePidVersion));
-            builder.otherId(getRDFProperty(resource, DansDataVaultMetadata.dansOtherId));
-            builder.otherIdVersion(getRDFProperty(resource, DansDataVaultMetadata.dansOtherIdVersion));
-            builder.title(getRDFProperty(resource, DCTerms.title));
+            builder.bagId(getSingleValueProperty(theAggregation, DansDataVaultMetadata.dansBagId));
+            builder.nbn(getSingleValueProperty(theAggregation, DansDataVaultMetadata.dansNbn));
+            builder.swordToken(getSingleValueProperty(theAggregation, DansDataVaultMetadata.dansSwordToken));
+            builder.dataSupplier(getSingleValueProperty(theAggregation, DansDataVaultMetadata.dansDataSupplier));
+            builder.dataversePid(getSingleValueProperty(theAggregation, DansDataVaultMetadata.dansDataversePid));
+            builder.dataversePidVersion(getSingleValueProperty(theAggregation, DansDataVaultMetadata.dansDataversePidVersion));
+            builder.otherId(getSingleValueProperty(theAggregation, DansDataVaultMetadata.dansOtherId));
+            builder.otherIdVersion(getSingleValueProperty(theAggregation, DansDataVaultMetadata.dansOtherIdVersion));
+            builder.title(getSingleValueProperty(theAggregation, DCTerms.title));
             builder.metadata(json);
         }
+
+        var resourceMap = model.listStatements(null, RDF.type, OaiOreMetadata.ResourceMap);
+
+        if (resourceMap.hasNext()) {
+            var theResouceMap = resourceMap.next().getSubject();
+            builder.exporter(getEmbeddedSingleValueProperty(theResouceMap, DvCore.generatedBy, Schema.name));
+            builder.exporterVersion(getEmbeddedSingleValueProperty(theResouceMap, DvCore.generatedBy, Schema.version));
+        }
+
         return builder.build();
     }
 
-    private String getEmbeddedRDFProperty(Resource resource, Property parent, Property child) {
-        var results = new HashSet<String>();
 
-        resource.listProperties(parent)
-            .forEachRemaining(item -> {
-                var value = getRDFProperty(item.getObject().asResource(), child);
 
-                if (value != null) {
-                    results.add(value);
-                }
-            });
-
-        if (results.isEmpty()) {
-            return null;
-        }
-
-        // ensure we get deterministic results
-        var list = new ArrayList<>(results);
-        list.sort(String::compareTo);
-
-        return StringUtils.join(list, "; ");
-    }
-
-    private String getRDFProperty(Resource resource, Property name) {
+    private String getSingleValueProperty(Resource resource, Property name) {
         var results = new HashSet<String>();
 
         resource.listProperties(name).forEachRemaining(item -> {
@@ -92,13 +83,35 @@ public class OaiOreMetadataReader {
 
         if (results.isEmpty()) {
             return null;
+        } else if (results.size() > 1) {
+            throw new IllegalArgumentException("Expected a single value for property " + name + ", but found: " + results);
         }
 
-        // ensure we get deterministic results
-        var list = new ArrayList<>(results);
-        list.sort(String::compareTo);
-
-        return StringUtils.join(list, "; ");
+        return results.iterator().next();
     }
+
+    private String getEmbeddedSingleValueProperty(Resource resource, Property parent, Property child) {
+        var results = new HashSet<String>();
+
+        resource.listProperties(parent)
+            .forEachRemaining(item -> {
+                var value = getSingleValueProperty(item.getObject().asResource(), child);
+                if (value != null) {
+                    results.add(value);
+                }
+            });
+
+        if (results.isEmpty()) {
+            return null;
+        } else if (results.size() > 1) {
+            throw new IllegalArgumentException("Expected a single value for property " + parent + ", but found: " + results);
+        }
+
+        return results.iterator().next();
+    }
+
+
+
+
 
 }
