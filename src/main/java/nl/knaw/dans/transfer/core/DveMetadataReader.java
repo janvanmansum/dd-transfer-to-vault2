@@ -32,14 +32,13 @@ public class DveMetadataReader {
     private final OaiOreMetadataReader oaiOreMetadataReader;
     private final DataFileMetadataReader dataFileMetadataReader;
 
-    public DveMetadata getFileContentAttributes(Path path) {
+    public DveMetadata readDveMetadata(Path path) {
 
         try {
             var datasetVersionExport = fileService.openZipFile(path);
-            var metadataContent = fileService.getEntryUnderBaseFolder(datasetVersionExport, Path.of("metadata/oai-ore.jsonld"));
-            var oaiOre = IOUtils.toString(metadataContent, StandardCharsets.UTF_8);
-            var fileContentAttributes = oaiOreMetadataReader.readMetadata(oaiOre);
-            fileContentAttributes.setMetadata(oaiOre);
+            var metadataInputstream = fileService.getEntryUnderBaseFolder(datasetVersionExport, Path.of("metadata/oai-ore.jsonld"));
+            var oaiOre = IOUtils.toString(metadataInputstream, StandardCharsets.UTF_8);
+            var dveMetadata = oaiOreMetadataReader.readMetadata(oaiOre);
             var propertiesPath = path.getParent().resolve(path.getFileName() + ".properties");
             String creationTimeValue = null;
             if (Files.exists(propertiesPath)) {
@@ -47,7 +46,7 @@ public class DveMetadataReader {
                 try (var reader = Files.newBufferedReader(propertiesPath)) {
                     props.load(reader);
                     creationTimeValue = props.getProperty("creationTime");
-                    fileContentAttributes.setCreationTime(OffsetDateTime.parse(creationTimeValue));
+                    dveMetadata.setCreationTime(OffsetDateTime.parse(creationTimeValue));
                 }
             }
             else {
@@ -55,9 +54,9 @@ public class DveMetadataReader {
             }
 
             var dataFileAttributes = dataFileMetadataReader.readDataFileAttributes(path);
-            fileContentAttributes.setDataFileAttributes(dataFileAttributes);
+            dveMetadata.setDataFileAttributes(dataFileAttributes);
 
-            return fileContentAttributes;
+            return dveMetadata;
         }
         catch (IOException e) {
             throw new RuntimeException("unable to read metadata from file", e);

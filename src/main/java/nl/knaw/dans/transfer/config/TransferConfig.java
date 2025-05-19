@@ -22,6 +22,8 @@ import javax.validation.constraints.NotNull;
 
 @Data
 public class TransferConfig {
+    private String datastation;
+
     @Valid
     @NotNull
     private CollectDveConfig collectDve;

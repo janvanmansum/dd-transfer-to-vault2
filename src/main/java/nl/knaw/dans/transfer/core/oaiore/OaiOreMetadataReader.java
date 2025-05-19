@@ -50,41 +50,12 @@ public class OaiOreMetadataReader {
             builder.dataSupplier(getRDFProperty(resource, DansDataVaultMetadata.dansDataSupplier));
             builder.dataversePid(getRDFProperty(resource, DansDataVaultMetadata.dansDataversePid));
             builder.dataversePidVersion(getRDFProperty(resource, DansDataVaultMetadata.dansDataversePidVersion));
-            builder.otherId(getEmbeddedRDFProperty(resource, DataverseCitationMetadata.otherId, DataverseCitationMetadata.otherIdValue));
+            builder.otherId(getRDFProperty(resource, DansDataVaultMetadata.dansOtherId));
             builder.otherIdVersion(getRDFProperty(resource, DansDataVaultMetadata.dansOtherIdVersion));
             builder.title(getRDFProperty(resource, DCTerms.title));
+            builder.metadata(json);
         }
-
-        var resourceMap = model.listStatements(null, RDF.type, OaiOreMetadata.ResourceMap);
-
-        if (resourceMap.hasNext()) {
-            var resource = resourceMap.next().getSubject();
-            // TODO this is not used, instead the value in config.yml is used as the datastation
-            // verify how this should work
-            var creator = getRDFProperty(resource, DCTerms.creator);
-
-            if (creator == null) {
-                creator = getEmbeddedRDFProperty(resource, DCTerms.creator, FOAF.name);
-            }
-
-            builder.datastation(creator);
-        }
-
         return builder.build();
-    }
-
-    private String swordTokenToUrnUuid(String swordToken) {
-        if (StringUtils.isBlank(swordToken)) {
-            return null;
-        }
-
-        var parts = swordToken.split(":");
-
-        if (parts.length != 2) {
-            return null;
-        }
-
-        return "urn:uuid:" + parts[1];
     }
 
     private String getEmbeddedRDFProperty(Resource resource, Property parent, Property child) {

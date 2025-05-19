@@ -69,6 +69,7 @@ public class DdTransferToVaultApplication extends Application<DdTransferToVaultC
                 .fileFilter(FileFilterUtils.directoryFileFilter())
                 .taskFactory(
                     ExtractMetadataTaskFactory.builder()
+                        .datastation(configuration.getTransfer().getDatastation())
                         .outboxProcessed(configuration.getTransfer().getExtractMetadata().getOutbox().getProcessed())
                         .outboxFailed(configuration.getTransfer().getExtractMetadata().getOutbox().getFailed())
                         .outboxRejected(configuration.getTransfer().getExtractMetadata().getOutbox().getRejected())

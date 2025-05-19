@@ -34,11 +34,11 @@ public class VaultCatalogClientImpl implements VaultCatalogClient {
     private final DefaultApi catalogApi;
 
     @Override
-    public void registerOcflObjectVersion(DveMetadata dveMetadata, int ocflObjectVersion) throws IOException {
+    public void registerOcflObjectVersion(String datastation, DveMetadata dveMetadata, int ocflObjectVersion) throws IOException {
         try {
             var datasetDto = getDataset(dveMetadata.getNbn());
             if (datasetDto == null) {
-                addNewDataset(dveMetadata);
+                addNewDataset(datastation, dveMetadata);
             }
             else if (ocflObjectVersion == -1) {
                 addNewVersionExport(datasetDto, dveMetadata);
@@ -64,13 +64,13 @@ public class VaultCatalogClientImpl implements VaultCatalogClient {
         }
     }
 
-    private void addNewDataset(DveMetadata dveMetadata) throws ApiException {
+    private void addNewDataset(String datastation, DveMetadata dveMetadata) throws ApiException {
         var datasetDto = new DatasetDto()
             .nbn(dveMetadata.getNbn())
             .dataversePid(dveMetadata.getDataversePid())
             .swordToken(dveMetadata.getSwordToken())
             .dataSupplier(dveMetadata.getDataSupplier())
-            .datastation(dveMetadata.getDatastation());
+            .datastation(datastation);
 
         var dveDto = new VersionExportDto();
         dveDto.setOcflObjectVersionNumber(1);

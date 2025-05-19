@@ -27,6 +27,7 @@ import java.util.List;
 @Slf4j
 @AllArgsConstructor
 public class ExtractMetadataTask implements Runnable {
+    private final String datastation;
     private final Path targetNbnDir;
     private final Path outboxProcessed;
     private final Path outboxFailed;
@@ -55,7 +56,7 @@ public class ExtractMetadataTask implements Runnable {
                     TransferItem transferItem = null;
                     try {
                         transferItem = new TransferItem(dve, dveMetadataReader);
-                        vaultCatalogClient.registerOcflObjectVersion(transferItem.readMetadata(), transferItem.getOcflObjectVersion());
+                        vaultCatalogClient.registerOcflObjectVersion(datastation, transferItem.readMetadata(), transferItem.getOcflObjectVersion());
                         transferItem.moveToDir(outboxProcessed);
                     }
                     catch (Exception e) {

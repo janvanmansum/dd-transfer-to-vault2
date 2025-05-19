@@ -210,7 +210,7 @@ public class TransferItem {
         if (dveMetadataReader == null) {
             throw new IllegalStateException("FileContentAttributesReader is not initialized");
         }
-        return dveMetadataReader.getFileContentAttributes(dve);
+        return dveMetadataReader.readDveMetadata(dve);
     }
 
     private static Object getCreationTime(Path path) throws IOException {
