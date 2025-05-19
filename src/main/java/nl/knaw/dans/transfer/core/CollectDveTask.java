@@ -15,21 +15,11 @@
  */
 package nl.knaw.dans.transfer.core;
 
-import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.PathNotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.ProviderNotFoundException;
-
-import static nl.knaw.dans.transfer.core.FileUtils.calculateProperties;
-import static nl.knaw.dans.transfer.core.FileUtils.findFreeName;
-import static nl.knaw.dans.transfer.core.FileUtils.writeProperties;
 
 /**
  * <p>
@@ -44,80 +34,33 @@ import static nl.knaw.dans.transfer.core.FileUtils.writeProperties;
 @Slf4j
 @AllArgsConstructor
 public class CollectDveTask implements Runnable {
-    private static final String METADATA_PATH = "metadata/oai-ore.jsonld";
-    private static final String NBN_PATH = "$.ore:describes.dansDataVaultMetadata:dansNbn";
-
     private final Path dve;
     private final Path destinationRoot;
     private final Path failedOutbox;
 
     @Override
     public void run() {
+        TransferItem transferItem = null;
         try {
-            var targetNbn = findTargetNbn();
+            transferItem = new TransferItem(dve);
+            var targetNbn = transferItem.readNbn();
             var targetDir = destinationRoot.resolve(targetNbn);
             FileUtils.ensureDirectoryExists(targetDir);
-            moveToDir(targetDir);
+            transferItem.moveToDir(targetDir);
         }
         catch (Exception e) {
             log.error("Unable to process DVE: {}", dve, e);
             try {
-                moveToDir(failedOutbox, e);
+                if (transferItem != null) {
+                    transferItem.moveToDir(failedOutbox, e);
+                }
+                else {
+                    log.error("TransferItem is null, unable to move DVE to failed outbox");
+                }
             }
             catch (IOException ioe) {
                 log.error("Unable to move DVE to failed outbox: {}", failedOutbox, ioe);
             }
-        }
-    }
-
-    private String findTargetNbn() throws IOException {
-        try {
-            try (FileSystem zipFs = FileSystems.newFileSystem(dve, (ClassLoader) null)) {
-                var rootDir = zipFs.getRootDirectories().iterator().next();
-                try (var topLevelDirStream = Files.list(rootDir)) {
-                    var topLevelDir = topLevelDirStream.filter(Files::isDirectory)
-                        .findFirst()
-                        .orElseThrow(() -> new IllegalStateException("No top-level directory found in DVE"));
-
-                    var metadataPath = topLevelDir.resolve(METADATA_PATH);
-                    if (!Files.exists(metadataPath)) {
-                        throw new IllegalStateException("No metadata file found in DVE");
-                    }
-
-                    try (var is = Files.newInputStream(metadataPath)) {
-                        return JsonPath.read(is, NBN_PATH);
-                    }
-                    catch (PathNotFoundException e) {
-                        throw new IllegalStateException("No NBN found in DVE", e);
-                    }
-                    catch (Exception e) {
-                        throw new IllegalStateException("Unable to read NBN from metadata file", e);
-                    }
-                }
-            }
-        }
-        catch (ProviderNotFoundException e) {
-            throw new RuntimeException("The file system provider is not found. Probably not a ZIP file: " + dve, e);
-        }
-    }
-
-
-    private void moveToDir(Path dir) throws IOException {
-        moveToDir(dir, null);
-    }
-
-    private void moveToDir(Path dir, Exception e) throws IOException {
-        var props = calculateProperties(dve);
-        var newLocation = findFreeName(dir, dve);
-        if (newLocation == null) {
-            log.info("File already exists with the same MD5 hash: {}", dve);
-            return; // Skip the move if the file already exists with the same MD5
-        }
-        var newPropertiesFile = newLocation.resolveSibling(newLocation.getFileName() + ".properties");
-        writeProperties(newPropertiesFile, props);
-        Files.move(dve, dir.resolve(dve.getFileName()));
-        if (e != null) {
-            FileUtils.writeStackTrace(newLocation, e);
         }
     }
 }

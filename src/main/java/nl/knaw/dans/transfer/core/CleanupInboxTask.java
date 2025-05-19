@@ -16,36 +16,38 @@
 package nl.knaw.dans.transfer.core;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder.Default;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 @Slf4j
-public class RemoveEmptySubdirsTask implements Runnable {
+@AllArgsConstructor
+public class CleanupInboxTask implements Runnable {
     private final Path path;
-    private final String skipDirectory;
-
-    public RemoveEmptySubdirsTask(Path path) {
-        this(path, null);
-    }
-
-    public RemoveEmptySubdirsTask(Path path, String skipDirectory) {
-        this.path = path;
-        this.skipDirectory = skipDirectory;
-    }
 
     @Override
     public void run() {
+        log.debug("Deleting empty subdirs in: {}", path);
         try (var stream = Files.list(path)) {
             stream
                 .filter(Files::isDirectory)
-                .filter(p -> !p.getFileName().toString().equals(skipDirectory))
                 .forEach(this::deleteIfEmpty);
         }
         catch (Exception e) {
             throw new RuntimeException("Failed to list subdirs in: " + path, e);
+        }
+        log.debug("Deleting XML files in: {}", path);
+        try (var stream = Files.list(path)) {
+            stream
+                .filter(Files::isRegularFile)
+                .filter(p -> p.getFileName().toString().endsWith(".xml"))
+                .map(Path::toFile)
+                .forEach(FileUtils::deleteQuietly);
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Failed to list files in: " + path, e);
         }
     }
 

@@ -22,7 +22,7 @@ import java.nio.file.Files;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RemoveEmptySubdirsTaskTest extends TestDirFixture {
+public class CleanupInboxTaskTest extends TestDirFixture {
 
     @Test
     public void testRemoveEmptySubdirs() throws Exception {
@@ -40,7 +40,7 @@ public class RemoveEmptySubdirsTaskTest extends TestDirFixture {
         assertThat(emptySubdir).exists();
 
         // When
-        new RemoveEmptySubdirsTask(testDir).run();
+        new CleanupInboxTask(testDir).run();
 
         // Then
         assertThat(subdir1).exists();

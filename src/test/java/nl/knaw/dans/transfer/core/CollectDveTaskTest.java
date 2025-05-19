@@ -32,11 +32,13 @@ public class CollectDveTaskTest extends TestDirFixture {
         Files.createDirectories(inbox);
         var dest = testDir.resolve("dest");
         Files.createDirectories(dest);
+        var failed = testDir.resolve("failed");
+        Files.createDirectories(failed);
 
         var dve = inbox.resolve("dve.zip");
         Files.copy(Path.of("src/test/resources/test-dves/doi-10-5072-dar-zzjh97v1.1.zip"), dve);
 
-        var collectDveTask = new CollectDveTask(dve, dest, inbox.resolve("failed"));
+        var collectDveTask = new CollectDveTask(dve, dest, failed);
 
         // When
         collectDveTask.run();

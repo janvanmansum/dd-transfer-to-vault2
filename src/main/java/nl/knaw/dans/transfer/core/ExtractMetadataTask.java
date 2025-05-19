@@ -22,10 +22,7 @@ import nl.knaw.dans.transfer.client.VaultCatalogClient;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
-
-import static nl.knaw.dans.transfer.core.FileUtils.findFreeName;
 
 @Slf4j
 @AllArgsConstructor
@@ -55,14 +52,20 @@ public class ExtractMetadataTask implements Runnable {
             var dves = getDves();
             while (!dves.isEmpty()) {
                 for (var dve : dves) {
+                    TransferItem transferItem = null;
                     try {
-                        var fileContenctAttributes = fileContentAttributesReader.getFileContentAttributes(dve);
-                        vaultCatalogClient.registerOcflObjectVersion(fileContenctAttributes);
-                        moveToDir(dve, outboxProcessed, null);
+                        transferItem = new TransferItem(dve, fileContentAttributesReader);
+                        vaultCatalogClient.registerOcflObjectVersion(transferItem.readMetadata());
+                        transferItem.moveToDir(outboxProcessed);
                     }
                     catch (Exception e) {
                         log.error("Error processing DVE", e);
-                        moveToDir(dve, outboxFailed, e);
+                        if (transferItem != null) {
+                            transferItem.moveToDir(outboxFailed, e);
+                        }
+                        else {
+                            log.error("TransferItem is null, unable to move DVE to failed outbox");
+                        }
                         try {
                             blockTarget();
                         }
@@ -70,9 +73,9 @@ public class ExtractMetadataTask implements Runnable {
                             log.error("Unable to block target directory", ioe);
                         }
                     }
-                    // Get any new DVE files that may have been added while processing
-                    dves = getDves();
                 }
+                // Get any new DVE files that may have been added while processing
+                dves = getDves();
             }
         }
         catch (Exception e) {
@@ -97,6 +100,7 @@ public class ExtractMetadataTask implements Runnable {
     private List<Path> getDves() throws IOException {
         try (var dirStream = Files.list(targetNbnDir)) {
             return dirStream.filter(Files::isRegularFile).filter(p -> p.getFileName().toString().endsWith(".zip"))
+                // TODO: use creationTime in the properties file instead
                 .sorted(CreationTimeComparator.getInstance()).toList();
         }
     }
@@ -108,21 +112,6 @@ public class ExtractMetadataTask implements Runnable {
     private void blockTarget() throws IOException {
         if (!isBlocked()) {
             Files.createFile(targetNbnDir.resolve("block"));
-        }
-    }
-
-    private void moveToDir(Path dve, Path dir, Exception e) throws IOException {
-        var newLocation = findFreeName(dir, dve);
-        if (newLocation == null) {
-            log.info("File already exists with the same MD5 hash: {}", dve);
-            return; // Skip the move if the file already exists with the same MD5
-        }
-        var sourcePropertiesFile = dve.resolveSibling(dve.getFileName() + ".properties");
-        var targetPropertiesFile = newLocation.resolveSibling(newLocation.getFileName() + ".properties");
-        Files.move(sourcePropertiesFile, targetPropertiesFile, StandardCopyOption.REPLACE_EXISTING);
-        Files.move(dve, dir.resolve(dve.getFileName()));
-        if (e != null) {
-            FileUtils.writeStackTrace(newLocation, e);
         }
     }
 }

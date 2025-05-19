@@ -32,7 +32,7 @@ import nl.knaw.dans.transfer.core.ExtractMetadataTaskFactory;
 import nl.knaw.dans.transfer.core.FileContentAttributesReader;
 import nl.knaw.dans.transfer.core.FileService;
 import nl.knaw.dans.transfer.core.FileServiceImpl;
-import nl.knaw.dans.transfer.core.RemoveEmptySubdirsTask;
+import nl.knaw.dans.transfer.core.CleanupInboxTask;
 import nl.knaw.dans.transfer.core.oaiore.OaiOreMetadataReader;
 import nl.knaw.dans.vaultcatalog.client.invoker.ApiClient;
 import nl.knaw.dans.vaultcatalog.client.resources.DefaultApi;
@@ -84,7 +84,7 @@ public class DdTransferToVaultApplication extends Application<DdTransferToVaultC
         environment.lifecycle().manage(
             Inbox.builder()
                 .awaitLatch(startCollectInbox)
-                .onPollingHandler(new RemoveEmptySubdirsTask(configuration.getTransfer().getCollectDve().getOutbox().getProcessed()))
+                .onPollingHandler(new CleanupInboxTask(configuration.getTransfer().getCollectDve().getOutbox().getProcessed()))
                 .fileFilter(new DveFileFilter())
                 .taskFactory(
                     CollectDveTaskFactory.builder()

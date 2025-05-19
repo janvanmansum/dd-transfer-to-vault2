@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.Properties;
 
+// TODO: create DatasetDto directly from the zip file
 @AllArgsConstructor
 public class FileContentAttributesReader {
     private final FileService fileService;
