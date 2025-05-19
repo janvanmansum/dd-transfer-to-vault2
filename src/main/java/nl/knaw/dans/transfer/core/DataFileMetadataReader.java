@@ -30,10 +30,10 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 @AllArgsConstructor
-public class DataFileAttributesReader {
+public class DataFileMetadataReader {
     private final FileService fileService;
 
-    public List<DataFileAttributes> readDataFileAttributes(Path dveZip) throws IOException {
+    public List<DataFileMetadata> readDataFileAttributes(Path dveZip) throws IOException {
         try (var datasetVersionExport = fileService.openZipFile(dveZip)) {
             var pidMappingContent = fileService.getEntryUnderBaseFolder(datasetVersionExport, Path.of("metadata/pid-mapping.txt"));
             var sha1ManifestContent = fileService.getEntryUnderBaseFolder(datasetVersionExport, Path.of("manifest-sha1.txt"));
@@ -50,7 +50,7 @@ public class DataFileAttributesReader {
                     var pid = entry.getValue();
                     var sha1 = pathToSha1Map.get(path);
                     var size = pathToSizeMap.get(path);
-                    return new DataFileAttributes(path, pid, sha1, size);
+                    return new DataFileMetadata(path, pid, sha1, size);
                 })
                 .toList();
         }

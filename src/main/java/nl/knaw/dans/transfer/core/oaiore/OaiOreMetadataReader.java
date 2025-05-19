@@ -15,7 +15,7 @@
  */
 package nl.knaw.dans.transfer.core.oaiore;
 
-import nl.knaw.dans.transfer.core.FileContentAttributes;
+import nl.knaw.dans.transfer.core.DveMetadata;
 import nl.knaw.dans.transfer.core.oaiore.vocabulary.DansDataVaultMetadata;
 import nl.knaw.dans.transfer.core.oaiore.vocabulary.DataverseCitationMetadata;
 import nl.knaw.dans.transfer.core.oaiore.vocabulary.OaiOreMetadata;
@@ -34,11 +34,11 @@ import java.util.HashSet;
 
 public class OaiOreMetadataReader {
 
-    public FileContentAttributes readMetadata(String json) {
+    public DveMetadata readMetadata(String json) {
         var model = ModelFactory.createDefaultModel();
         model.read(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), null, "JSON-LD");
 
-        var builder = FileContentAttributes.builder();
+        var builder = DveMetadata.builder();
         var aggregations = model.listStatements(null, RDF.type, OaiOreMetadata.Aggregation);
 
         if (aggregations.hasNext()) {

@@ -26,14 +26,13 @@ import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.Properties;
 
-// TODO: create DatasetDto directly from the zip file
 @AllArgsConstructor
-public class FileContentAttributesReader {
+public class DveMetadataReader {
     private final FileService fileService;
     private final OaiOreMetadataReader oaiOreMetadataReader;
-    private final DataFileAttributesReader dataFileAttributesReader;
+    private final DataFileMetadataReader dataFileMetadataReader;
 
-    public FileContentAttributes getFileContentAttributes(Path path) {
+    public DveMetadata getFileContentAttributes(Path path) {
 
         try {
             var datasetVersionExport = fileService.openZipFile(path);
@@ -55,7 +54,7 @@ public class FileContentAttributesReader {
                 throw new IllegalStateException("Missing properties file: " + propertiesPath);
             }
 
-            var dataFileAttributes = dataFileAttributesReader.readDataFileAttributes(path);
+            var dataFileAttributes = dataFileMetadataReader.readDataFileAttributes(path);
             fileContentAttributes.setDataFileAttributes(dataFileAttributes);
 
             return fileContentAttributes;

@@ -40,7 +40,7 @@ public class CleanupInboxTaskTest extends TestDirFixture {
         assertThat(emptySubdir).exists();
 
         // When
-        new CleanupInboxTask(testDir).run();
+        new RemoveEmptyTargetDirsTask(testDir).run();
 
         // Then
         assertThat(subdir1).exists();

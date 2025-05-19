@@ -15,7 +15,6 @@
  */
 package nl.knaw.dans.transfer.core;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NonNull;
 import nl.knaw.dans.lib.util.inbox.InboxTaskFactory;
@@ -32,12 +31,12 @@ public class ExtractMetadataTaskFactory implements InboxTaskFactory {
     @NonNull
     private final Path outboxRejected;
     @NonNull
-    private final FileContentAttributesReader fileContentAttributesReader;
+    private final DveMetadataReader dveMetadataReader;
     @NonNull
     private final VaultCatalogClient vaultCatalogClient;
 
     @Override
     public Runnable createInboxTask(Path targetNbnDir) {
-        return new ExtractMetadataTask(targetNbnDir, outboxProcessed, outboxFailed, outboxRejected, fileContentAttributesReader, vaultCatalogClient);
+        return new ExtractMetadataTask(targetNbnDir, outboxProcessed, outboxFailed, outboxRejected, dveMetadataReader, vaultCatalogClient);
     }
 }

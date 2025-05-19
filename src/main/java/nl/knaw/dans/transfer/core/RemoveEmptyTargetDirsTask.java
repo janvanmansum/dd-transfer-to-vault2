@@ -17,14 +17,13 @@ package nl.knaw.dans.transfer.core;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 @Slf4j
 @AllArgsConstructor
-public class CleanupInboxTask implements Runnable {
+public class RemoveEmptyTargetDirsTask implements Runnable {
     private final Path path;
 
     @Override
@@ -37,17 +36,6 @@ public class CleanupInboxTask implements Runnable {
         }
         catch (Exception e) {
             throw new RuntimeException("Failed to list subdirs in: " + path, e);
-        }
-        log.debug("Deleting XML files in: {}", path);
-        try (var stream = Files.list(path)) {
-            stream
-                .filter(Files::isRegularFile)
-                .filter(p -> p.getFileName().toString().endsWith(".xml"))
-                .map(Path::toFile)
-                .forEach(FileUtils::deleteQuietly);
-        }
-        catch (Exception e) {
-            throw new RuntimeException("Failed to list files in: " + path, e);
         }
     }
 

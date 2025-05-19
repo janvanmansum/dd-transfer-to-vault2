@@ -35,14 +35,14 @@ import java.util.Properties;
 public class TransferItem {
     private static final String METADATA_PATH = "metadata/oai-ore.jsonld";
     private static final String NBN_PATH = "$.ore:describes.dansDataVaultMetadata:dansNbn";
-    private final FileContentAttributesReader fileContentAttributesReader;
+    private final DveMetadataReader dveMetadataReader;
 
     private Path dve;
     private Path properties;
 
-    public TransferItem(Path dve, FileContentAttributesReader fileContentAttributesReader) {
+    public TransferItem(Path dve, DveMetadataReader dveMetadataReader) {
         this.dve = dve;
-        this.fileContentAttributesReader = fileContentAttributesReader;
+        this.dveMetadataReader = dveMetadataReader;
         this.properties = initProperties(dve);
     }
 
@@ -115,7 +115,7 @@ public class TransferItem {
                 newPath = targetDir.resolve(baseName + "-" + sequenceNumber + extension);
             }
             sequenceNumber++;
-            if (Files.exists(newPath) && new TransferItem(newPath).getProperty("MD5").equals(getProperty("MD5"))) {
+            if (Files.exists(newPath) && new TransferItem(newPath).getProperty("md5").equals(getProperty("md5"))) {
                 break;
             }
         }
@@ -160,6 +160,21 @@ public class TransferItem {
         }
     }
 
+    public int getOcflObjectVersion() {
+        Object ocflObjectVersion = getProperty("ocflObjectVersion");
+        if (ocflObjectVersion == null) {
+            return -1;
+        }
+        else {
+            try {
+                return Integer.parseInt(ocflObjectVersion.toString());
+            }
+            catch (NumberFormatException e) {
+                throw new IllegalStateException("Invalid OCFL object version: " + ocflObjectVersion, e);
+            }
+        }
+    }
+
     public String readNbn() throws IOException {
         try {
             try (FileSystem zipFs = FileSystems.newFileSystem(dve, (ClassLoader) null)) {
@@ -191,11 +206,11 @@ public class TransferItem {
         }
     }
 
-    public FileContentAttributes readMetadata() {
-        if (fileContentAttributesReader == null) {
+    public DveMetadata readMetadata() {
+        if (dveMetadataReader == null) {
             throw new IllegalStateException("FileContentAttributesReader is not initialized");
         }
-        return fileContentAttributesReader.getFileContentAttributes(dve);
+        return dveMetadataReader.getFileContentAttributes(dve);
     }
 
     private static Object getCreationTime(Path path) throws IOException {

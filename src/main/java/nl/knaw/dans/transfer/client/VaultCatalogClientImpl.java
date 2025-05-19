@@ -17,7 +17,7 @@ package nl.knaw.dans.transfer.client;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nl.knaw.dans.transfer.core.FileContentAttributes;
+import nl.knaw.dans.transfer.core.DveMetadata;
 import nl.knaw.dans.vaultcatalog.client.api.DatasetDto;
 import nl.knaw.dans.vaultcatalog.client.api.FileMetaDto;
 import nl.knaw.dans.vaultcatalog.client.api.VersionExportDto;
@@ -34,14 +34,17 @@ public class VaultCatalogClientImpl implements VaultCatalogClient {
     private final DefaultApi catalogApi;
 
     @Override
-    public void registerOcflObjectVersion(FileContentAttributes fileContentAttributes) throws IOException {
+    public void registerOcflObjectVersion(DveMetadata dveMetadata, int ocflObjectVersion) throws IOException {
         try {
-            var datasetDto = getDataset(fileContentAttributes.getNbn());
+            var datasetDto = getDataset(dveMetadata.getNbn());
             if (datasetDto == null) {
-                registerNewDataset(fileContentAttributes);
+                addNewDataset(dveMetadata);
+            }
+            else if (ocflObjectVersion == -1) {
+                addNewVersionExport(datasetDto, dveMetadata);
             }
             else {
-                updateExistingDataset(datasetDto, fileContentAttributes);
+                updateExistingSkeletonVersionExport(datasetDto, dveMetadata, ocflObjectVersion);
             }
         }
         catch (ApiException e) {
@@ -61,18 +64,18 @@ public class VaultCatalogClientImpl implements VaultCatalogClient {
         }
     }
 
-    private void registerNewDataset(FileContentAttributes fileContentAttributes) throws ApiException {
+    private void addNewDataset(DveMetadata dveMetadata) throws ApiException {
         var datasetDto = new DatasetDto()
-            .nbn(fileContentAttributes.getNbn())
-            .dataversePid(fileContentAttributes.getDataversePid())
-            .swordToken(fileContentAttributes.getSwordToken())
-            .dataSupplier(fileContentAttributes.getDataSupplier())
-            .datastation(fileContentAttributes.getDatastation());
+            .nbn(dveMetadata.getNbn())
+            .dataversePid(dveMetadata.getDataversePid())
+            .swordToken(dveMetadata.getSwordToken())
+            .dataSupplier(dveMetadata.getDataSupplier())
+            .datastation(dveMetadata.getDatastation());
 
         var dveDto = new VersionExportDto();
         dveDto.setOcflObjectVersionNumber(1);
-        setVersionExportMetadata(fileContentAttributes, dveDto);
-        setDataFilesOnVersionExport(fileContentAttributes, dveDto);
+        setVersionExportMetadata(dveMetadata, dveDto);
+        setDataFilesOnVersionExport(dveMetadata, dveDto);
         datasetDto.addVersionExportsItem(dveDto);
         dveDto.setDatasetNbn(datasetDto.getNbn());
         catalogApi.addDataset(datasetDto.getNbn(), datasetDto);
@@ -82,7 +85,7 @@ public class VaultCatalogClientImpl implements VaultCatalogClient {
         return path.subpath(1, path.getNameCount());
     }
 
-    private void updateExistingDataset(DatasetDto datasetDto, FileContentAttributes fileContentAttributes) throws ApiException {
+    private void updateExistingSkeletonVersionExport(DatasetDto datasetDto, DveMetadata dveMetadata, int OcflObjectVersion) throws ApiException {
         assert datasetDto.getVersionExports() != null;
         var dveDto = datasetDto.getVersionExports()
             .stream()
@@ -92,26 +95,36 @@ public class VaultCatalogClientImpl implements VaultCatalogClient {
         if (Boolean.FALSE.equals(dveDto.getSkeletonRecord())) {
             throw new IllegalArgumentException("The Dataset Version Export record cannot be updated because it is not a skeleton record.");
         }
-        setVersionExportMetadata(fileContentAttributes, dveDto);
-        setDataFilesOnVersionExport(fileContentAttributes, dveDto);
+        setVersionExportMetadata(dveMetadata, dveDto);
+        setDataFilesOnVersionExport(dveMetadata, dveDto);
         catalogApi.setVersionExport(dveDto.getDatasetNbn(), dveDto.getOcflObjectVersionNumber(), dveDto);
     }
 
-    private void setVersionExportMetadata(FileContentAttributes fileContentAttributes, VersionExportDto dveDto) {
-        dveDto.setCreatedTimestamp(fileContentAttributes.getCreationTime());
-        dveDto.setBagId(fileContentAttributes.getBagId());
-        dveDto.setDatasetNbn(fileContentAttributes.getNbn());
-        dveDto.setDataversePidVersion(fileContentAttributes.getDataversePidVersion());
-        dveDto.setOtherId(fileContentAttributes.getOtherId());
-        dveDto.setOtherIdVersion(fileContentAttributes.getOtherIdVersion());
-        dveDto.setMetadata(fileContentAttributes.getMetadata());
-        dveDto.setSkeletonRecord(false);
-        dveDto.setTitle(fileContentAttributes.getTitle());
+    private void addNewVersionExport(DatasetDto datasetDto, DveMetadata dveMetadata) throws ApiException {
+        var dveDto = new VersionExportDto();
+        assert datasetDto.getVersionExports() != null;
+        dveDto.setOcflObjectVersionNumber(datasetDto.getVersionExports().size() + 1);
+        setVersionExportMetadata(dveMetadata, dveDto);
+        setDataFilesOnVersionExport(dveMetadata, dveDto);
+        datasetDto.addVersionExportsItem(dveDto);
+        catalogApi.setVersionExport(datasetDto.getNbn(), dveDto.getOcflObjectVersionNumber(), dveDto);
     }
 
-    private void setDataFilesOnVersionExport(FileContentAttributes fileContentAttributes, VersionExportDto dveDto) {
+    private void setVersionExportMetadata(DveMetadata dveMetadata, VersionExportDto dveDto) {
+        dveDto.setCreatedTimestamp(dveMetadata.getCreationTime());
+        dveDto.setBagId(dveMetadata.getBagId());
+        dveDto.setDatasetNbn(dveMetadata.getNbn());
+        dveDto.setDataversePidVersion(dveMetadata.getDataversePidVersion());
+        dveDto.setOtherId(dveMetadata.getOtherId());
+        dveDto.setOtherIdVersion(dveMetadata.getOtherIdVersion());
+        dveDto.setMetadata(dveMetadata.getMetadata());
+        dveDto.setSkeletonRecord(false);
+        dveDto.setTitle(dveMetadata.getTitle());
+    }
+
+    private void setDataFilesOnVersionExport(DveMetadata dveMetadata, VersionExportDto dveDto) {
         dveDto.setFileMetas(null); // clear existing fileMetas
-        for (var dataFile : fileContentAttributes.getDataFileAttributes()) {
+        for (var dataFile : dveMetadata.getDataFileAttributes()) {
             var dataFileDto = new FileMetaDto()
                 .filepath(removeBaseFolder(dataFile.getFilepath()).toString())
                 .fileUri(dataFile.getUri())

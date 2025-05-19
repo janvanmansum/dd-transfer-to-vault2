@@ -26,13 +26,15 @@ import nl.knaw.dans.transfer.client.VaultCatalogClientImpl;
 import nl.knaw.dans.transfer.config.DdTransferToVaultConfiguration;
 import nl.knaw.dans.transfer.core.CollectDveTaskFactory;
 import nl.knaw.dans.transfer.core.CreationTimeComparator;
-import nl.knaw.dans.transfer.core.DataFileAttributesReader;
+import nl.knaw.dans.transfer.core.DataFileMetadataReader;
 import nl.knaw.dans.transfer.core.DveFileFilter;
+import nl.knaw.dans.transfer.core.DveMetadataReader;
 import nl.knaw.dans.transfer.core.ExtractMetadataTaskFactory;
-import nl.knaw.dans.transfer.core.FileContentAttributesReader;
 import nl.knaw.dans.transfer.core.FileService;
 import nl.knaw.dans.transfer.core.FileServiceImpl;
-import nl.knaw.dans.transfer.core.CleanupInboxTask;
+import nl.knaw.dans.transfer.core.RemoveEmptyTargetDirsTask;
+import nl.knaw.dans.transfer.core.RemoveXmlFilesTask;
+import nl.knaw.dans.transfer.core.SequencedTasks;
 import nl.knaw.dans.transfer.core.oaiore.OaiOreMetadataReader;
 import nl.knaw.dans.vaultcatalog.client.invoker.ApiClient;
 import nl.knaw.dans.vaultcatalog.client.resources.DefaultApi;
@@ -70,10 +72,10 @@ public class DdTransferToVaultApplication extends Application<DdTransferToVaultC
                         .outboxProcessed(configuration.getTransfer().getExtractMetadata().getOutbox().getProcessed())
                         .outboxFailed(configuration.getTransfer().getExtractMetadata().getOutbox().getFailed())
                         .outboxRejected(configuration.getTransfer().getExtractMetadata().getOutbox().getRejected())
-                        .fileContentAttributesReader(new FileContentAttributesReader(
+                        .dveMetadataReader(new DveMetadataReader(
                             fileService,
                             new OaiOreMetadataReader(),
-                            new DataFileAttributesReader(fileService)))
+                            new DataFileMetadataReader(fileService)))
                         .vaultCatalogClient(vaultCatalogClient).build())
                 .inbox(configuration.getTransfer().getExtractMetadata().getInbox().getPath())
                 .executorService(configuration.getTransfer().getExtractMetadata().getTaskQueue().build(environment))
@@ -84,7 +86,9 @@ public class DdTransferToVaultApplication extends Application<DdTransferToVaultC
         environment.lifecycle().manage(
             Inbox.builder()
                 .awaitLatch(startCollectInbox)
-                .onPollingHandler(new CleanupInboxTask(configuration.getTransfer().getCollectDve().getOutbox().getProcessed()))
+                .onPollingHandler(new SequencedTasks(
+                    new RemoveEmptyTargetDirsTask(configuration.getTransfer().getCollectDve().getOutbox().getProcessed()),
+                    new RemoveXmlFilesTask(configuration.getTransfer().getCollectDve().getInbox().getPath())))
                 .fileFilter(new DveFileFilter())
                 .taskFactory(
                     CollectDveTaskFactory.builder()
@@ -96,7 +100,6 @@ public class DdTransferToVaultApplication extends Application<DdTransferToVaultC
                 .interval(Math.toIntExact(configuration.getTransfer().getCollectDve().getInbox().getPollingInterval().toMilliseconds()))
                 .inboxItemComparator(CreationTimeComparator.getInstance())
                 .build());
-
 
     }
 

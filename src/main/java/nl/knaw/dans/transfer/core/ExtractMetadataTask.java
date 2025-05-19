@@ -31,7 +31,7 @@ public class ExtractMetadataTask implements Runnable {
     private final Path outboxProcessed;
     private final Path outboxFailed;
     private final Path outboxRejected;
-    private final FileContentAttributesReader fileContentAttributesReader;
+    private final DveMetadataReader dveMetadataReader;
     private final VaultCatalogClient vaultCatalogClient;
 
     @Override
@@ -54,8 +54,8 @@ public class ExtractMetadataTask implements Runnable {
                 for (var dve : dves) {
                     TransferItem transferItem = null;
                     try {
-                        transferItem = new TransferItem(dve, fileContentAttributesReader);
-                        vaultCatalogClient.registerOcflObjectVersion(transferItem.readMetadata());
+                        transferItem = new TransferItem(dve, dveMetadataReader);
+                        vaultCatalogClient.registerOcflObjectVersion(transferItem.readMetadata(), transferItem.getOcflObjectVersion());
                         transferItem.moveToDir(outboxProcessed);
                     }
                     catch (Exception e) {

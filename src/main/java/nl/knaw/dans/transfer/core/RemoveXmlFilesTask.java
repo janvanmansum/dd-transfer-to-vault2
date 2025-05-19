@@ -15,21 +15,31 @@
  */
 package nl.knaw.dans.transfer.core;
 
-import lombok.Builder;
-import lombok.NonNull;
-import nl.knaw.dans.lib.util.inbox.InboxTaskFactory;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 
-@Builder
-public class CollectDveTaskFactory implements InboxTaskFactory {
-    @NonNull
-    private final Path destinationRoot;
-    @NonNull
-    private final Path failedOutbox;
+@AllArgsConstructor
+@Slf4j
+public class RemoveXmlFilesTask implements Runnable {
+    private final Path path;
 
     @Override
-    public Runnable createInboxTask(Path path) {
-        return new CollectDveTask(path, destinationRoot, failedOutbox);
+    public void run() {
+        log.debug("Deleting XML files in: {}", path);
+        try (var stream = Files.list(path)) {
+            stream
+                .filter(Files::isRegularFile)
+                .filter(p -> p.getFileName().toString().endsWith(".xml"))
+                .map(Path::toFile)
+                .forEach(FileUtils::deleteQuietly);
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Failed to list files in: " + path, e);
+        }
+
     }
 }

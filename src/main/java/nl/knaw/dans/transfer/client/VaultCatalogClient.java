@@ -16,7 +16,7 @@
 package nl.knaw.dans.transfer.client;
 
 
-import nl.knaw.dans.transfer.core.FileContentAttributes;
+import nl.knaw.dans.transfer.core.DveMetadata;
 
 import java.io.IOException;
 
@@ -24,5 +24,5 @@ import java.io.IOException;
  * Client for the Vault Catalog API.
  */
 public interface VaultCatalogClient {
-    void registerOcflObjectVersion(FileContentAttributes fileContentAttributes) throws IOException;
+    void registerOcflObjectVersion(DveMetadata dveMetadata, int ocflObjectVersion) throws IOException;
 }

@@ -15,15 +15,29 @@
  */
 package nl.knaw.dans.transfer.core;
 
-import lombok.Value;
+import lombok.Builder;
+import lombok.Data;
+import lombok.ToString;
 
-import java.net.URI;
-import java.nio.file.Path;
+import java.time.OffsetDateTime;
+import java.util.List;
 
-@Value
-public class DataFileAttributes {
-    Path filepath;
-    URI uri;
-    String sha1Checksum;
-    long size;
+@Data
+@Builder
+public class DveMetadata {
+    private OffsetDateTime creationTime;
+
+    private String dataversePid;
+    private String dataversePidVersion;
+    private String title;
+    private String bagId;
+    private String nbn;
+    @ToString.Exclude
+    private String metadata;
+    private String otherId;
+    private String otherIdVersion;
+    private String swordToken;
+    private String dataSupplier;
+    private String datastation;
+    private List<DataFileMetadata> dataFileAttributes;
 }
