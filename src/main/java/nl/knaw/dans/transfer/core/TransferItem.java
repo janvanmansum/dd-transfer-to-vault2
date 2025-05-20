@@ -15,39 +15,25 @@
  */
 package nl.knaw.dans.transfer.core;
 
-import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.PathNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.ProviderNotFoundException;
 import java.util.Properties;
 
 /**
  * A Dataset Version Export (DVE) and auxiliary files. The DVE is the only mandatory file. The other files are searched next to the DVE or constructed from the DVE. This class is intended to provide
- * lightweight access to the DVE and its metadata, and not to be a full-fledged representation of the DVE.
+ * lightweight access to the DVE and its properties. It is not intended to be a full-fledged DVE reader or writer.
  */
 @Slf4j
 public class TransferItem {
-    private static final String METADATA_PATH = "metadata/oai-ore.jsonld";
-    private static final String NBN_PATH = "$.ore:describes.dansDataVaultMetadata:dansNbn";
-    private final DveMetadataReader dveMetadataReader;
-
     private Path dve;
     private Path properties;
 
-    public TransferItem(Path dve, DveMetadataReader dveMetadataReader) {
-        this.dve = dve;
-        this.dveMetadataReader = dveMetadataReader;
-        this.properties = initProperties(dve);
-    }
-
     public TransferItem(Path dve) {
-        this(dve, null);
+        this.dve = dve;
+        this.properties = initProperties(dve);
     }
 
     private static Path initProperties(Path dve) {
@@ -173,44 +159,6 @@ public class TransferItem {
                 throw new IllegalStateException("Invalid OCFL object version: " + ocflObjectVersion, e);
             }
         }
-    }
-
-    public String readNbn() throws IOException {
-        try {
-            try (FileSystem zipFs = FileSystems.newFileSystem(dve, (ClassLoader) null)) {
-                var rootDir = zipFs.getRootDirectories().iterator().next();
-                try (var topLevelDirStream = Files.list(rootDir)) {
-                    var topLevelDir = topLevelDirStream.filter(Files::isDirectory)
-                        .findFirst()
-                        .orElseThrow(() -> new IllegalStateException("No top-level directory found in DVE"));
-
-                    var metadataPath = topLevelDir.resolve(METADATA_PATH);
-                    if (!Files.exists(metadataPath)) {
-                        throw new IllegalStateException("No metadata file found in DVE");
-                    }
-
-                    try (var is = Files.newInputStream(metadataPath)) {
-                        return JsonPath.read(is, NBN_PATH);
-                    }
-                    catch (PathNotFoundException e) {
-                        throw new IllegalStateException("No NBN found in DVE", e);
-                    }
-                    catch (Exception e) {
-                        throw new IllegalStateException("Unable to read NBN from metadata file", e);
-                    }
-                }
-            }
-        }
-        catch (ProviderNotFoundException e) {
-            throw new RuntimeException("The file system provider is not found. Probably not a ZIP file: " + dve, e);
-        }
-    }
-
-    public DveMetadata readMetadata() {
-        if (dveMetadataReader == null) {
-            throw new IllegalStateException("FileContentAttributesReader is not initialized");
-        }
-        return dveMetadataReader.readDveMetadata(dve);
     }
 
     private static Object getCreationTime(Path path) throws IOException {

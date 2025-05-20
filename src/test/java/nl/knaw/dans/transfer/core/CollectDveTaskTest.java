@@ -28,6 +28,7 @@ public class CollectDveTaskTest extends TestDirFixture {
     @Test
     public void should_move_dve_to_target_dir() throws Exception {
         // Given
+        var nbn = "urn:nbn:nl:ui:13-307ab602-abfa-44c0-b35b-fd75e97105a4";
         var inbox = testDir.resolve("inbox");
         Files.createDirectories(inbox);
         var dest = testDir.resolve("dest");
@@ -44,7 +45,14 @@ public class CollectDveTaskTest extends TestDirFixture {
         collectDveTask.run();
 
         // Then
-        assertThat(dest.resolve("urn:nbn:nl:ui:13-307ab602-abfa-44c0-b35b-fd75e97105a4")).isDirectory();
+        try (var destDirs = Files.list(dest)) {
+            assertThat(destDirs
+                .filter(Files::isDirectory)
+                .map(p -> p.getFileName().toString())
+                .anyMatch(name -> name.startsWith(nbn + "-")))
+                .isTrue();
+        }
+
     }
 
     @Test

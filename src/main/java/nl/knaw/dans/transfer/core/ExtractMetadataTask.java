@@ -21,6 +21,7 @@ import nl.knaw.dans.transfer.client.VaultCatalogClient;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -51,12 +52,12 @@ public class ExtractMetadataTask implements Runnable {
 
         try {
             var dves = getDves();
-            while (!dves.isEmpty()) {
+            while (Files.exists(targetNbnDir)) {
                 for (var dve : dves) {
                     TransferItem transferItem = null;
                     try {
-                        transferItem = new TransferItem(dve, dveMetadataReader);
-                        vaultCatalogClient.registerOcflObjectVersion(datastation, transferItem.readMetadata(), transferItem.getOcflObjectVersion());
+                        transferItem = new TransferItem(dve);
+                        vaultCatalogClient.registerOcflObjectVersion(datastation, dveMetadataReader.readDveMetadata(dve), transferItem.getOcflObjectVersion());
                         transferItem.moveToDir(outboxProcessed);
                     }
                     catch (Exception e) {
@@ -75,6 +76,16 @@ public class ExtractMetadataTask implements Runnable {
                         }
                     }
                 }
+                // Wait 100ms before checking for new files
+                try {
+                    Thread.sleep(100);
+                }
+                catch (InterruptedException e) {
+                    log.debug("Thread interrupted, exiting");
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+
                 // Get any new DVE files that may have been added while processing
                 dves = getDves();
             }
@@ -103,6 +114,15 @@ public class ExtractMetadataTask implements Runnable {
             return dirStream.filter(Files::isRegularFile).filter(p -> p.getFileName().toString().endsWith(".zip"))
                 // TODO: use creationTime in the properties file instead
                 .sorted(CreationTimeComparator.getInstance()).toList();
+        }
+        catch (NoSuchFileException e) {
+            log.debug("No such file exception: {}", e.getMessage());
+            // This can happen if the targetNbnDir is deleted just after processing the last DVE.
+            return List.of();
+        }
+        catch (IOException e) {
+            log.error("Error listing files in targetNbnDir", e);
+            throw e;
         }
     }
 

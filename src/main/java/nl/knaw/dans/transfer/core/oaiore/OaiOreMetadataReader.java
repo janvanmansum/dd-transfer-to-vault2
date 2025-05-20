@@ -17,22 +17,17 @@ package nl.knaw.dans.transfer.core.oaiore;
 
 import nl.knaw.dans.transfer.core.DveMetadata;
 import nl.knaw.dans.transfer.core.oaiore.vocabulary.DansDataVaultMetadata;
-import nl.knaw.dans.transfer.core.oaiore.vocabulary.DataverseCitationMetadata;
 import nl.knaw.dans.transfer.core.oaiore.vocabulary.DvCore;
 import nl.knaw.dans.transfer.core.oaiore.vocabulary.OaiOreMetadata;
 import nl.knaw.dans.transfer.core.oaiore.vocabulary.Schema;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.sparql.vocabulary.FOAF;
 import org.apache.jena.vocabulary.DCTerms;
 import org.apache.jena.vocabulary.RDF;
-import org.apache.jena.vocabulary.SchemaDO;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.HashSet;
 
 public class OaiOreMetadataReader {
@@ -59,18 +54,16 @@ public class OaiOreMetadataReader {
             builder.metadata(json);
         }
 
-        var resourceMap = model.listStatements(null, RDF.type, OaiOreMetadata.ResourceMap);
+        var resourceMaps = model.listStatements(null, RDF.type, OaiOreMetadata.ResourceMap);
 
-        if (resourceMap.hasNext()) {
-            var theResouceMap = resourceMap.next().getSubject();
+        if (resourceMaps.hasNext()) {
+            var theResouceMap = resourceMaps.next().getSubject();
             builder.exporter(getEmbeddedSingleValueProperty(theResouceMap, DvCore.generatedBy, Schema.name));
             builder.exporterVersion(getEmbeddedSingleValueProperty(theResouceMap, DvCore.generatedBy, Schema.version));
         }
 
         return builder.build();
     }
-
-
 
     private String getSingleValueProperty(Resource resource, Property name) {
         var results = new HashSet<String>();
@@ -83,7 +76,8 @@ public class OaiOreMetadataReader {
 
         if (results.isEmpty()) {
             return null;
-        } else if (results.size() > 1) {
+        }
+        else if (results.size() > 1) {
             throw new IllegalArgumentException("Expected a single value for property " + name + ", but found: " + results);
         }
 
@@ -103,15 +97,12 @@ public class OaiOreMetadataReader {
 
         if (results.isEmpty()) {
             return null;
-        } else if (results.size() > 1) {
+        }
+        else if (results.size() > 1) {
             throw new IllegalArgumentException("Expected a single value for property " + parent + ", but found: " + results);
         }
 
         return results.iterator().next();
     }
-
-
-
-
 
 }

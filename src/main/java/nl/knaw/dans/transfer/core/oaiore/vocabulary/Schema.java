@@ -19,7 +19,7 @@ import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 
 public class Schema {
-    public static final String NS = "http://schema.org/"; // Dataverse used http instead of https
+    public static final String NS = "http://schema.org/"; // Dataverse uses http instead of https, so we cannot use SchemaDO
     private static final Model m = ModelFactory.createDefaultModel();
     public static final org.apache.jena.rdf.model.Property name = m.createProperty(NS, "name");
     public static final org.apache.jena.rdf.model.Property version = m.createProperty(NS, "version");

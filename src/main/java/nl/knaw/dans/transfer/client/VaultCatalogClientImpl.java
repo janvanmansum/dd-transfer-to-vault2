@@ -37,13 +37,13 @@ public class VaultCatalogClientImpl implements VaultCatalogClient {
     public void registerOcflObjectVersion(String datastation, DveMetadata dveMetadata, int ocflObjectVersion) throws IOException {
         try {
             var datasetDto = getDataset(dveMetadata.getNbn());
-            if (datasetDto == null) {
+            if (datasetDto == null) { // Data Stations only
                 addNewDataset(datastation, dveMetadata);
             }
-            else if (ocflObjectVersion == -1) {
+            else if (ocflObjectVersion == -1) { // Data Stations only
                 addNewVersionExport(datasetDto, dveMetadata);
             }
-            else {
+            else { // VaaS only
                 updateExistingSkeletonVersionExport(datasetDto, dveMetadata, ocflObjectVersion);
             }
         }
