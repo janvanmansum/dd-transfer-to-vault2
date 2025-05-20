@@ -57,7 +57,8 @@ public class ExtractMetadataTask implements Runnable {
                     TransferItem transferItem = null;
                     try {
                         transferItem = new TransferItem(dve);
-                        vaultCatalogClient.registerOcflObjectVersion(datastation, dveMetadataReader.readDveMetadata(dve), transferItem.getOcflObjectVersion());
+                        transferItem.setOcflObjectVersion(
+                            vaultCatalogClient.registerOcflObjectVersion(datastation, dveMetadataReader.readDveMetadata(dve), transferItem.getOcflObjectVersion()));
                         transferItem.moveToDir(outboxProcessed);
                     }
                     catch (Exception e) {
@@ -116,7 +117,7 @@ public class ExtractMetadataTask implements Runnable {
                 .sorted(CreationTimeComparator.getInstance()).toList();
         }
         catch (NoSuchFileException e) {
-            log.debug("No such file exception: {}", e.getMessage());
+            log.debug("Target directory {} does not exist anymore. No more DVEs to process.", targetNbnDir);
             // This can happen if the targetNbnDir is deleted just after processing the last DVE.
             return List.of();
         }

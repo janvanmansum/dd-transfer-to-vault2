@@ -21,6 +21,7 @@ import io.dropwizard.core.setup.Bootstrap;
 import io.dropwizard.core.setup.Environment;
 import nl.knaw.dans.lib.util.ClientProxyBuilder;
 import nl.knaw.dans.lib.util.inbox.Inbox;
+import nl.knaw.dans.transfer.client.DataVaultClient;
 import nl.knaw.dans.transfer.client.VaultCatalogClient;
 import nl.knaw.dans.transfer.client.VaultCatalogClientImpl;
 import nl.knaw.dans.transfer.config.DdTransferToVaultConfiguration;
@@ -34,6 +35,7 @@ import nl.knaw.dans.transfer.core.FileService;
 import nl.knaw.dans.transfer.core.FileServiceImpl;
 import nl.knaw.dans.transfer.core.RemoveEmptyTargetDirsTask;
 import nl.knaw.dans.transfer.core.RemoveXmlFilesTask;
+import nl.knaw.dans.transfer.core.SendToVaultTaskFactory;
 import nl.knaw.dans.transfer.core.SequencedTasks;
 import nl.knaw.dans.transfer.core.oaiore.OaiOreMetadataReader;
 import nl.knaw.dans.vaultcatalog.client.invoker.ApiClient;
@@ -61,6 +63,20 @@ public class DdTransferToVaultApplication extends Application<DdTransferToVaultC
     @Override
     public void run(final DdTransferToVaultConfiguration configuration, final Environment environment) {
         FileService fileService = new FileServiceImpl();
+        environment.lifecycle().manage(Inbox.builder()
+            .fileFilter(new DveFileFilter())
+            .inbox(configuration.getTransfer().getSendToVault().getInbox().getPath())
+            .taskFactory(SendToVaultTaskFactory.builder()
+                .currentBatchWorkDir(configuration.getTransfer().getSendToVault().getDataVault().getCurrentBatchWorkingDir())
+                .threshold(configuration.getTransfer().getSendToVault().getDataVault().getThreshold().toBytes())
+                .readableThreshold(configuration.getTransfer().getSendToVault().getDataVault().getThreshold())
+                .outboxProcessed(configuration.getTransfer().getSendToVault().getOutbox().getProcessed())
+                .outboxFailed(configuration.getTransfer().getSendToVault().getOutbox().getFailed())
+                .dataVaultBatchRoot(configuration.getTransfer().getSendToVault().getDataVault().getBatchRoot())
+                .dataVaultClient(createDataVaultClient(configuration))
+                .build())
+            .build());
+
         VaultCatalogClient vaultCatalogClient = createVaultCatalogClient(configuration);
         CountDownLatch startCollectInbox = new CountDownLatch(1);
         environment.lifecycle().manage(
@@ -112,6 +128,15 @@ public class DdTransferToVaultApplication extends Application<DdTransferToVaultC
             .defaultApiCtor(nl.knaw.dans.vaultcatalog.client.resources.DefaultApi::new)
             .build();
         return new VaultCatalogClientImpl(vaultCatalogProxy);
+    }
+
+    private DataVaultClient createDataVaultClient(DdTransferToVaultConfiguration configuration) {
+        return new DataVaultClient(new ClientProxyBuilder<nl.knaw.dans.datavault.client.invoker.ApiClient, nl.knaw.dans.datavault.client.resources.DefaultApi>()
+            .apiClient(new nl.knaw.dans.datavault.client.invoker.ApiClient())
+            .basePath(configuration.getDataVault().getUrl())
+            .httpClient(configuration.getDataVault().getHttpClient())
+            .defaultApiCtor(nl.knaw.dans.datavault.client.resources.DefaultApi::new)
+            .build());
     }
 
 }

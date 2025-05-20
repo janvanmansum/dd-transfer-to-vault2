@@ -15,14 +15,26 @@
  */
 package nl.knaw.dans.transfer.client;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import nl.knaw.dans.datavault.client.api.ImportCommandDto;
+import nl.knaw.dans.datavault.client.resources.DefaultApi;
 
-import nl.knaw.dans.transfer.core.DveMetadata;
+import java.nio.file.Path;
 
-import java.io.IOException;
+@Slf4j
+@AllArgsConstructor
+public class DataVaultClient {
+    private final DefaultApi vaultApi;
 
-/**
- * Client for the Vault Catalog API.
- */
-public interface VaultCatalogClient {
-    int registerOcflObjectVersion(String datastation, DveMetadata dveMetadata, int ocflObjectVersion) throws IOException;
+    public void sendBatchToVault(Path batchPath) {
+        try {
+            var importCommand = new ImportCommandDto()
+                .path(batchPath.toAbsolutePath().toString());
+            vaultApi.importsPost(importCommand);
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Failed to send batch to Data Vault", e);
+        }
+    }
 }

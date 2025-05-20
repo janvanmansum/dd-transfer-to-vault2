@@ -24,6 +24,9 @@ import java.nio.file.Path;
 @Data
 public class DataVaultBatchConfig {
     @NotNull
+    private Path currentBatchWorkingDir;
+
+    @NotNull
     private Path batchRoot;
 
     private DataSize threshold = DataSize.megabytes(100);

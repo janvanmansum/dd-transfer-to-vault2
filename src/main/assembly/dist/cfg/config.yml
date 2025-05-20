@@ -37,11 +37,11 @@ transfer:
       pollingInterval: 500ms
     outbox:
       # Successfully processed DVEs will be sent on to the sendToVault service.
-      processed: /var/opt/dans.knaw.nl/tmp/transfer-inboxes/INSTANCE/send-to-vault/inbox
+      processed: /var/opt/dans.knaw.nl/tmp/dd-transfer-to-vault/INSTANCE/send-to-vault/inbox
       # Failed DVEs will be moved to the failed directory.
-      failed: /var/opt/dans.knaw.nl/tmp/transfer-inboxes/INSTANCE/metadata-extraction/failed
+      failed: /var/opt/dans.knaw.nl/tmp/dd-transfer-to-vault/INSTANCE/metadata-extraction/failed
       # DVEs that do not comply with the BagPack requirements will be moved to the rejected directory.
-      rejected: /var/opt/dans.knaw.nl/tmp/transfer-inboxes/INSTANCE/metadata-extraction/rejected
+      rejected: /var/opt/dans.knaw.nl/tmp/dd-transfer-to-vault/INSTANCE/metadata-extraction/rejected
     taskQueue:
       nameFormat: "extract-metadata-worker-%d"
       maxQueueSize: 5000
@@ -54,15 +54,17 @@ transfer:
   # Unzip the DVE and send it to the Data Vault
   sendToVault:
     inbox:
-      path: /var/opt/dans.knaw.nl/tmp/transfer-inboxes/INSTANCE/send-to-vault/inbox
+      path: /var/opt/dans.knaw.nl/tmp/dd-transfer-to-vault/INSTANCE/send-to-vault/inbox
       pollingInterval: 500ms
     outbox:
       # The original ZIP files of successfully processed DVEs will be moved to this directory. Note that the data is transferred to the vault by
       # extracting the ZIP file to a batch directory (see below) and then sending the batch to the vault.
-      processed: /var/opt/dans.knaw.nl/tmp/transfer-inboxes/INSTANCE/send-to-vault/processed
+      processed: /var/opt/dans.knaw.nl/tmp/dd-transfer-to-vault/INSTANCE/send-to-vault/processed
       # If the transfer to the vault fails, the original ZIP files will be moved to this directory.
-      failed: /var/opt/dans.knaw.nl/tmp/transfer-inboxes/INSTANCE/send-to-vault/failed
+      failed: /var/opt/dans.knaw.nl/tmp/dd-transfer-to-vault/INSTANCE/send-to-vault/failed
     dataVault:
+      # The current batch being assembled
+      currentBatchWorkingDir: /var/opt/dans.knaw.nl/tmp/dd-transfer-to-vault/INSTANCE/current-batch-work
       # Create import batches under this directory
       batchRoot: /var/opt/dans.knaw.nl/tmp/dd-data-vault/INSTANCE/inbox
       # If the batch size exceeds this threshold, issue the import request and start a new batch

@@ -28,6 +28,14 @@ import java.util.Properties;
  */
 @Slf4j
 public class TransferItem {
+    private static final String PROPERTIES_SUFFIX = ".properties";
+    private static final String ERROR_LOG_SUFFIX = "-error.log";
+
+    private static final String KEY_CREATION_TIME = "creationTime";
+    private static final String KEY_MD5 = "md5";
+    private static final String KEY_OCFL_OBJECT_VERSION = "ocflObjectVersion";
+    private static final String KEY_NBN = "nbn";
+
     private Path dve;
     private Path properties;
 
@@ -38,11 +46,11 @@ public class TransferItem {
 
     private static Path initProperties(Path dve) {
         try {
-            var properties = dve.resolveSibling(dve.getFileName() + ".properties");
+            var properties = dve.resolveSibling(dve.getFileName() + PROPERTIES_SUFFIX);
             if (Files.notExists(properties)) {
                 var props = new Properties();
-                props.setProperty("creationTime", getCreationTime(dve).toString());
-                props.setProperty("md5", calculateMd5(dve));
+                props.setProperty(KEY_CREATION_TIME, getCreationTime(dve).toString());
+                props.setProperty(KEY_MD5, calculateMd5(dve));
                 // Save
                 try (var out = Files.newOutputStream(properties)) {
                     props.store(out, null);
@@ -64,7 +72,7 @@ public class TransferItem {
      */
     public void moveToDir(Path dir, Exception e) throws IOException {
         var newLocation = findFreeName(dir, dve);
-        var newPropertiesFile = newLocation.resolveSibling(newLocation.getFileName() + ".properties");
+        var newPropertiesFile = newLocation.resolveSibling(newLocation.getFileName() + PROPERTIES_SUFFIX);
         if (Files.exists(newLocation)) {
             log.error("File already exists: {}", newLocation);
         }
@@ -75,7 +83,7 @@ public class TransferItem {
             properties = newPropertiesFile;
         }
         if (e != null) {
-            var errorLogFile = newLocation.resolveSibling(newLocation.getFileName() + "-error.log");
+            var errorLogFile = newLocation.resolveSibling(newLocation.getFileName() + ERROR_LOG_SUFFIX);
             writeStackTrace(errorLogFile, e);
         }
     }
@@ -101,7 +109,7 @@ public class TransferItem {
                 newPath = targetDir.resolve(baseName + "-" + sequenceNumber + extension);
             }
             sequenceNumber++;
-            if (Files.exists(newPath) && new TransferItem(newPath).getProperty("md5").equals(getProperty("md5"))) {
+            if (Files.exists(newPath) && new TransferItem(newPath).getMd5().equals(this.getMd5())) {
                 break;
             }
         }
@@ -113,7 +121,7 @@ public class TransferItem {
         moveToDir(dir, null);
     }
 
-    public void setProperty(String key, String value) {
+    private void setProperty(String key, String value) {
         try {
             var props = new Properties();
             if (Files.exists(properties)) {
@@ -147,7 +155,7 @@ public class TransferItem {
     }
 
     public int getOcflObjectVersion() {
-        Object ocflObjectVersion = getProperty("ocflObjectVersion");
+        Object ocflObjectVersion = getProperty(KEY_OCFL_OBJECT_VERSION);
         if (ocflObjectVersion == null) {
             return -1;
         }
@@ -159,6 +167,25 @@ public class TransferItem {
                 throw new IllegalStateException("Invalid OCFL object version: " + ocflObjectVersion, e);
             }
         }
+    }
+
+    public void setOcflObjectVersion(int i) {
+        if (i < 1) {
+            throw new IllegalArgumentException("OCFL object version must be greater than 0");
+        }
+        setProperty(KEY_OCFL_OBJECT_VERSION, String.valueOf(i));
+    }
+
+    public String getNbn() {
+        return getProperty(KEY_NBN);
+    }
+
+    public void setNbn(String nbn) {
+        setProperty(KEY_NBN, nbn);
+    }
+
+    public String getMd5() {
+        return getProperty(KEY_MD5);
     }
 
     private static Object getCreationTime(Path path) throws IOException {

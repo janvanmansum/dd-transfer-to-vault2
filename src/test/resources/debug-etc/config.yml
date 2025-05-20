@@ -53,6 +53,8 @@ transfer:
       processed: data/03_send-to-vault/outbox/processed
       failed: data/03_send-to-vault/outbox/failed
     dataVault:
+      # The current batch being assembled
+      currentBatchWorkingDir: data/03_send-to-vault/work
       # Create import batches under this directory
       batchRoot: data/04_data-vault/inbox
       # If the batch size exceeds this threshold, issue the import request and start a new batch

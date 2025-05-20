@@ -61,7 +61,7 @@ public class CollectDveTask implements Runnable {
                 log.debug("Target directory {} already exists, using that", targetDir);
             }
             FileUtils.ensureDirectoryExists(targetDir);
-            transferItem.setProperty("nbn", targetNbn);
+            transferItem.setNbn(targetNbn);
             transferItem.moveToDir(targetDir);
         }
         catch (Exception e) {
