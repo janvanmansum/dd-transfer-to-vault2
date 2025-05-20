@@ -26,16 +26,6 @@ import java.util.zip.ZipFile;
 // TODO: refactor to FileUtils or inline code
 public interface FileService {
 
-    Path moveFile(Path current, Path newPath) throws IOException;
-
-    Object getFilesystemAttribute(Path path, String property) throws IOException;
-
-    String calculateChecksum(Path path) throws IOException;
-
-    long getFileSize(Path path) throws IOException;
-
-    long getPathSize(Path path) throws IOException;
-
     ZipFile openZipFile(Path path) throws IOException;
 
     /**
@@ -49,22 +39,4 @@ public interface FileService {
      * @throws IllegalArgumentException if the entry is not found or if more than one base folder is found
      */
     InputStream getEntryUnderBaseFolder(ZipFile datasetVersionExport, Path subpath) throws IOException;
-
-    Path moveFileAtomically(Path filePath, Path newPath) throws IOException;
-
-    void ensureDirectoryExists(Path path) throws IOException;
-
-    void rejectFile(Path path, Throwable exception) throws IOException;
-
-    boolean exists(Path path);
-
-    boolean canRead(Path path, int timeout) throws TimeoutException;
-
-    boolean canRead(Path path);
-
-    boolean canWrite(Path path);
-
-    FileStore getFileStore(Path path) throws IOException;
-
-    void cleanup(Path dir, Pattern pattern) throws IOException;
 }
