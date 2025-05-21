@@ -18,6 +18,7 @@ package nl.knaw.dans.transfer.client;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.knaw.dans.datavault.client.api.ImportCommandDto;
+import nl.knaw.dans.datavault.client.api.LayerStatusDto;
 import nl.knaw.dans.datavault.client.resources.DefaultApi;
 
 import java.nio.file.Path;
@@ -37,4 +38,27 @@ public class DataVaultClient {
             throw new RuntimeException("Failed to send batch to Data Vault", e);
         }
     }
+
+    public LayerStatusDto createNewLayer() {
+        try {
+            return vaultApi.layersPost();
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Failed to create new layer in Data Vault", e);
+        }
+    }
+
+    public long getTopLayerSize() {
+        try {
+            Long sizeInBytes = vaultApi.layersTopGet().getSizeInBytes();
+            if (sizeInBytes == null) {
+                throw new RuntimeException("Received null size for top layer from Data Vault");
+            }
+            return sizeInBytes;
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Failed to get top layer size from Data Vault", e);
+        }
+    }
+
 }

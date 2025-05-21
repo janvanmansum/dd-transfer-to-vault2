@@ -26,14 +26,14 @@ import java.nio.file.Path;
 public class SendToVaultTaskFactory implements InboxTaskFactory {
     private final Path currentBatchWorkDir;
     private final Path dataVaultBatchRoot;
-    private final long threshold;
-    private final DataSize readableThreshold;
+    private final DataSize batchThreshold;
+    private final DataSize layerThreshold;
     private final Path outboxProcessed;
     private final Path outboxFailed;
     private final DataVaultClient dataVaultClient;
 
     @Override
     public Runnable createInboxTask(Path path) {
-        return new SendToVaultTask(path, currentBatchWorkDir, dataVaultBatchRoot, threshold, readableThreshold, outboxProcessed, outboxFailed, dataVaultClient);
+        return new SendToVaultTask(path, currentBatchWorkDir, dataVaultBatchRoot, batchThreshold, layerThreshold, outboxProcessed, outboxFailed, dataVaultClient);
     }
 }

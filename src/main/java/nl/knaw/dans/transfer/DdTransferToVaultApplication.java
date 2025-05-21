@@ -61,7 +61,6 @@ public class DdTransferToVaultApplication extends Application<DdTransferToVaultC
 
     @Override
     public void initialize(final Bootstrap<DdTransferToVaultConfiguration> bootstrap) {
-        // TODO: application initialization
     }
 
     @Override
@@ -72,8 +71,8 @@ public class DdTransferToVaultApplication extends Application<DdTransferToVaultC
             .inbox(configuration.getTransfer().getSendToVault().getInbox().getPath())
             .taskFactory(SendToVaultTaskFactory.builder()
                 .currentBatchWorkDir(configuration.getTransfer().getSendToVault().getDataVault().getCurrentBatchWorkingDir())
-                .threshold(configuration.getTransfer().getSendToVault().getDataVault().getThreshold().toBytes())
-                .readableThreshold(configuration.getTransfer().getSendToVault().getDataVault().getThreshold())
+                .batchThreshold(configuration.getTransfer().getSendToVault().getDataVault().getBatchThreshold())
+                .layerThreshold(configuration.getTransfer().getSendToVault().getDataVault().getLayerThreshold())
                 .outboxProcessed(configuration.getTransfer().getSendToVault().getOutbox().getProcessed())
                 .outboxFailed(configuration.getTransfer().getSendToVault().getOutbox().getFailed())
                 .dataVaultBatchRoot(configuration.getTransfer().getSendToVault().getDataVault().getBatchRoot())

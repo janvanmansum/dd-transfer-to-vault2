@@ -36,8 +36,8 @@ public class SendToVaultTask implements Runnable {
     private final Path dve;
     private final Path currentBatchWorkDir;
     private final Path dataVaultBatchRoot;
-    private final long threshold;
-    private final DataSize readableThreshold;
+    private final DataSize batchThreshold;
+    private final DataSize layerThreshold;
     private final Path outboxProcessed;
     private final Path outboxFailed;
     private final DataVaultClient dataVaultClient;
@@ -48,7 +48,8 @@ public class SendToVaultTask implements Runnable {
         try {
             transferItem = new TransferItem(dve);
             addToObjectImportDirectory(dve, transferItem.getOcflObjectVersion(), this.currentBatchWorkDir.resolve(transferItem.getNbn()));
-            importIfThresholdReached();
+            createNewLayerIfLayerThresholdReached();
+            importIfBatchThresholdReached();
             transferItem.moveToDir(outboxProcessed);
         }
         catch (Exception e) {
@@ -71,10 +72,21 @@ public class SendToVaultTask implements Runnable {
         ZipUtil.extractZipFile(dvePath, versionDirectory);
     }
 
-    private void importIfThresholdReached() throws IOException {
-        if (sizeOfDirectory(this.currentBatchWorkDir.toFile()) > this.threshold) {
+    private void createNewLayerIfLayerThresholdReached() {
+        if (dataVaultClient.getTopLayerSize() > layerThreshold.toBytes()) {
+            log.info("Layer threshold ({}) reached, creating new layer in Data Vault", this.layerThreshold);
+            var layerStatusDto = dataVaultClient.createNewLayer();
+            log.info("New layer created in Data Vault; id = {}", layerStatusDto.getLayerId());
+        }
+        else {
+            log.debug("Layer threshold not reached, current size: {}", dataVaultClient.getTopLayerSize());
+        }
+    }
+
+    private void importIfBatchThresholdReached() throws IOException {
+        if (sizeOfDirectory(this.currentBatchWorkDir.toFile()) > this.batchThreshold.toBytes()) {
             var batch = dataVaultBatchRoot.resolve("batch-" + System.currentTimeMillis());
-            log.info("Threshold ({}) reached, sending batch {} to Data Vault", this.readableThreshold, batch);
+            log.info("Threshold ({}) reached, sending batch {} to Data Vault", this.batchThreshold, batch);
             log.info("Moving current batch directory {} to {}", currentBatchWorkDir, batch);
             moveDirectory(currentBatchWorkDir.toFile(), batch.toFile());
             dataVaultClient.sendBatchToVault(batch);
