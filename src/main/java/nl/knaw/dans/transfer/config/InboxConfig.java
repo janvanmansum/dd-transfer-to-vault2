@@ -17,6 +17,7 @@ package nl.knaw.dans.transfer.config;
 
 import io.dropwizard.util.Duration;
 import lombok.Data;
+import nl.knaw.dans.validation.ExistingFile;
 
 import javax.validation.constraints.NotNull;
 import java.nio.file.Path;
@@ -24,6 +25,7 @@ import java.nio.file.Path;
 @Data
 public class InboxConfig {
     @NotNull
+    @ExistingFile(isDirectory = true)
     private Path path;
     private Duration pollingInterval = Duration.seconds(5);
 }

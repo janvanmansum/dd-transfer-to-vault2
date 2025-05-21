@@ -18,12 +18,23 @@ package nl.knaw.dans.transfer.config;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Data;
 import nl.knaw.dans.convert.jackson.UriAddTrailingSlashConverter;
+import nl.knaw.dans.validation.ExistingFile;
 
+import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.net.URI;
+import java.nio.file.Path;
 
 @Data
 public class NbnRegistrationConfig {
+    @NotNull
+    @Valid
+    private InboxConfig inbox;
+
+    @NotNull
+    @Valid
+    private OutboxConfig outbox;
+
     @NotNull
     private GmhConfig gmh;
 

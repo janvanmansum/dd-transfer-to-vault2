@@ -13,17 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.transfer.config;
+package nl.knaw.dans.transfer.core;
 
-import lombok.Data;
-import nl.knaw.dans.validation.ExistingFile;
+import org.apache.commons.io.filefilter.AbstractFileFilter;
 
-import java.nio.file.Path;
+import java.io.File;
 
-@Data
-public class OutboxConfig {
-    @ExistingFile(isDirectory = true)
-    private Path processed;
-    @ExistingFile(isDirectory = true)
-    private Path failed;
+public class PropertiesFileFilter extends AbstractFileFilter {
+
+    @Override
+    public boolean accept(File file) {
+        return file.isFile() && file.getName().endsWith(".properties");
+    }
 }

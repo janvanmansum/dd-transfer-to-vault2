@@ -13,17 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.transfer.config;
+package nl.knaw.dans.transfer.core;
 
-import lombok.Data;
-import nl.knaw.dans.validation.ExistingFile;
+import lombok.Builder;
+import nl.knaw.dans.lib.util.inbox.InboxTaskFactory;
+import nl.knaw.dans.transfer.client.GmhClient;
 
 import java.nio.file.Path;
 
-@Data
-public class OutboxConfig {
-    @ExistingFile(isDirectory = true)
-    private Path processed;
-    @ExistingFile(isDirectory = true)
-    private Path failed;
+@Builder
+public class NbnRegistrationTaskFactory implements InboxTaskFactory {
+    private final GmhClient gmhClient;
+    private final Path outboxProcessed;
+    private final Path outboxFailed;
+
+    @Override
+    public Runnable createInboxTask(Path path) {
+        return new NbnRegistrationTask(path, gmhClient, outboxProcessed, outboxFailed);
+    }
 }

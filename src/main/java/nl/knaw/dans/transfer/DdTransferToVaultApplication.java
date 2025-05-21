@@ -22,6 +22,8 @@ import io.dropwizard.core.setup.Environment;
 import nl.knaw.dans.lib.util.ClientProxyBuilder;
 import nl.knaw.dans.lib.util.inbox.Inbox;
 import nl.knaw.dans.transfer.client.DataVaultClient;
+import nl.knaw.dans.transfer.client.GmhClient;
+import nl.knaw.dans.transfer.client.GmhClientImpl;
 import nl.knaw.dans.transfer.client.VaultCatalogClient;
 import nl.knaw.dans.transfer.client.VaultCatalogClientImpl;
 import nl.knaw.dans.transfer.config.DdTransferToVaultConfiguration;
@@ -33,6 +35,8 @@ import nl.knaw.dans.transfer.core.DveMetadataReader;
 import nl.knaw.dans.transfer.core.ExtractMetadataTaskFactory;
 import nl.knaw.dans.transfer.core.FileService;
 import nl.knaw.dans.transfer.core.FileServiceImpl;
+import nl.knaw.dans.transfer.core.NbnRegistrationTaskFactory;
+import nl.knaw.dans.transfer.core.PropertiesFileFilter;
 import nl.knaw.dans.transfer.core.RemoveEmptyTargetDirsTask;
 import nl.knaw.dans.transfer.core.RemoveXmlFilesTask;
 import nl.knaw.dans.transfer.core.SendToVaultTaskFactory;
@@ -118,6 +122,20 @@ public class DdTransferToVaultApplication extends Application<DdTransferToVaultC
                 .inboxItemComparator(CreationTimeComparator.getInstance())
                 .build());
 
+        environment.lifecycle().manage(
+            Inbox.builder()
+                .inbox(configuration.getNbnRegistration().getInbox().getPath())
+                .interval(Math.toIntExact(configuration.getNbnRegistration().getInbox().getPollingInterval().toMilliseconds()))
+                .executorService(environment.lifecycle().executorService("nbn-registration-inbox").maxThreads(1).minThreads(1).build())
+                .inboxItemComparator(CreationTimeComparator.getInstance())
+                .fileFilter(new PropertiesFileFilter())
+                .taskFactory(NbnRegistrationTaskFactory.builder()
+                    .gmhClient(createGmhClient(configuration))
+                    .outboxProcessed(configuration.getNbnRegistration().getOutbox().getProcessed())
+                    .outboxFailed(configuration.getNbnRegistration().getOutbox().getFailed())
+                    .build())
+                .build());
+
     }
 
     private VaultCatalogClient createVaultCatalogClient(DdTransferToVaultConfiguration configuration) {
@@ -136,6 +154,15 @@ public class DdTransferToVaultApplication extends Application<DdTransferToVaultC
             .basePath(configuration.getDataVault().getUrl())
             .httpClient(configuration.getDataVault().getHttpClient())
             .defaultApiCtor(nl.knaw.dans.datavault.client.resources.DefaultApi::new)
+            .build());
+    }
+
+    private GmhClient createGmhClient(DdTransferToVaultConfiguration configuration) {
+        return new GmhClientImpl(new ClientProxyBuilder<nl.knaw.dans.gmh.client.invoker.ApiClient, nl.knaw.dans.gmh.client.resources.UrnnbnIdentifierApi>()
+            .apiClient(new nl.knaw.dans.gmh.client.invoker.ApiClient().setBearerToken(configuration.getNbnRegistration().getGmh().getToken()))
+            .basePath(configuration.getNbnRegistration().getGmh().getUrl())
+            .httpClient(configuration.getNbnRegistration().getGmh().getHttpClient())
+            .defaultApiCtor(nl.knaw.dans.gmh.client.resources.UrnnbnIdentifierApi::new)
             .build());
     }
 

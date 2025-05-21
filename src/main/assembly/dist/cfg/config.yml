@@ -72,7 +72,12 @@ transfer:
 
 nbnRegistration:
   catalogBaseUrl: https://catalog.vault.datastations.nl/dataset
-  registrationInterval: 1000
+  inbox:
+    path: /var/opt/dans.knaw.nl/tmp/dd-transfer-to-vault/INSTANCE/nbn-registration/inbox
+    pollingInterval: 500ms
+  outbox:
+    processed: /var/opt/dans.knaw.nl/tmp/dd-transfer-to-vault/INSTANCE/nbn-registration/processed
+    failed: /var/opt/dans.knaw.nl/tmp/dd-transfer-to-vault/INSTANCE/nbn-registration/failed
   gmh:
     url: # Fill in a valid GMH server URL
     token: # Fill in a valid token, generated via the token endpoint of the GMH server
